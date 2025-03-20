@@ -1,3 +1,4 @@
+// src/pages/auth/RegisterPage.jsx
 import { useState } from "react";
 import {
   TextField,
@@ -7,9 +8,9 @@ import {
   InputAdornment,
   IconButton,
   Alert,
+  Snackbar,
   Link as MuiLink,
   CircularProgress,
-  Grid,
 } from "@mui/material";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { Link, useNavigate } from "react-router-dom";
@@ -19,6 +20,7 @@ import { registerUser } from "../../features/auth/authSlice";
 
 const RegisterPage = () => {
   const [showPassword, setShowPassword] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { isLoading, error } = useSelector((state) => state.auth);
@@ -34,16 +36,24 @@ const RegisterPage = () => {
       email: "",
       password: "",
       confirmPassword: "",
+      roleId: "4b41d3bc-95cb-4758-8c01-c5487707931e", //patient
     },
   });
 
   const onSubmit = async (data) => {
     try {
-      await dispatch(registerUser(data)).unwrap();
-      navigate("/login");
-    } catch (err) {
-      // Error already handled in Redux
-    }
+      const { confirmPassword, ...registerData } = data;
+
+      const resultAction = await dispatch(registerUser(registerData));
+
+      if (!resultAction.error) {
+        setSuccessMessage("Kayıt başarılı! Giriş yapılıyor...");
+      }
+    } catch (err) {}
+  };
+
+  const handleCloseSuccessMessage = () => {
+    setSuccessMessage("");
   };
 
   return (
@@ -63,7 +73,21 @@ const RegisterPage = () => {
         </Alert>
       )}
 
+      {/* Başarı toast mesajı */}
+      <Snackbar
+        open={!!successMessage}
+        autoHideDuration={3000}
+        onClose={handleCloseSuccessMessage}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert onClose={handleCloseSuccessMessage} severity="success">
+          {successMessage}
+        </Alert>
+      </Snackbar>
+
+      {/* Form içeriği... */}
       <form onSubmit={handleSubmit(onSubmit)}>
+        {/* Form alanları... */}
         <Controller
           name="username"
           control={control}

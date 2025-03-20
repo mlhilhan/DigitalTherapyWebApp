@@ -15,14 +15,19 @@ export const authAPI = {
   },
 
   logout: async () => {
-    const response = await api.post("/Auth/Logout");
+    const accessToken = localStorage.getItem("accessToken");
+    const refreshToken = localStorage.getItem("refreshToken");
+
+    const response = await api.post("/Auth/Logout", {
+      Token: accessToken,
+    });
     return response.data;
   },
 
   refreshToken: async (accessToken, refreshToken) => {
     const response = await api.post("/Auth/RefreshToken", {
-      accessToken,
-      refreshToken,
+      AccessToken: accessToken,
+      RefreshToken: refreshToken,
     });
     return response.data;
   },

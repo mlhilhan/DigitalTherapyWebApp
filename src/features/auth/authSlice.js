@@ -6,22 +6,40 @@ export const loginUser = createAsyncThunk(
   async ({ UsernameOrEmail, password }, { rejectWithValue }) => {
     try {
       const response = await authAPI.login(UsernameOrEmail, password);
-      localStorage.setItem("accessToken", response.accessToken);
+
+      if (!response.success) {
+        return rejectWithValue(response.message || "Login failed");
+      }
+
+      localStorage.setItem("accessToken", response.token);
       localStorage.setItem("refreshToken", response.refreshToken);
+
       return response;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Giriş başarısız"
-      );
+      return rejectWithValue(error.response?.data?.message || "Login failed");
     }
   }
 );
 
 export const registerUser = createAsyncThunk(
   "auth/register",
-  async ({ username, email, password }, { rejectWithValue }) => {
+  async (userData, { rejectWithValue, dispatch }) => {
     try {
-      const response = await authAPI.register({ username, email, password });
+      const response = await authAPI.register(userData);
+
+      if (!response.success) {
+        return rejectWithValue(response.message || "Kayıt başarısız");
+      }
+
+      if (response.success) {
+        await dispatch(
+          loginUser({
+            UsernameOrEmail: userData.username,
+            password: userData.password,
+          })
+        );
+      }
+
       return response;
     } catch (error) {
       return rejectWithValue(
@@ -40,6 +58,9 @@ export const logoutUser = createAsyncThunk(
       localStorage.removeItem("refreshToken");
       return true;
     } catch (error) {
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+
       return rejectWithValue(
         error.response?.data?.message || "Çıkış başarısız"
       );
@@ -58,7 +79,6 @@ export const checkAuth = createAsyncThunk(
         return { isAuthenticated: false };
       }
 
-      // Token kontrolü - gerçek uygulamada burada token doğrulaması yapılabilir
       return {
         isAuthenticated: true,
         accessToken,
@@ -96,12 +116,8 @@ const authSlice = createSlice({
       .addCase(loginUser.fulfilled, (state, action) => {
         state.isLoading = false;
         state.isAuthenticated = true;
-        state.user = {
-          id: action.payload.userId,
-          username: action.payload.username,
-          role: action.payload.role,
-        };
-        state.accessToken = action.payload.accessToken;
+        state.user = action.payload.user;
+        state.accessToken = action.payload.token;
         state.refreshToken = action.payload.refreshToken;
       })
       .addCase(loginUser.rejected, (state, action) => {

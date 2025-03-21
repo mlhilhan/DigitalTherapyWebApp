@@ -1,5 +1,11 @@
 {
+  "digitalTherapyAssistant": "Dijital Terapi Asistanı",
   "welcome": "Hoşgeldiniz",
+  "name": "Ad",
+  "surname": "Soyad",
   "username": "Kullanıcı Adı",
-  "password": "Şifre"
+  "password": "Parola",
+  "usernameOrEmail": "Kullanıcı Adı ya da E-Mail",
+  "nameIsRequired": "Ad alanı zorunludur",
+  "surnameIsRequired": "Soyad alanı zorunludur"
 }

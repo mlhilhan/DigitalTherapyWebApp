@@ -1,8 +1,10 @@
 import React from "react";
 import { Paper, Typography, Box, useTheme, useMediaQuery } from "@mui/material";
+import { useTranslation } from "react-i18next";
 
 const AuthLayout = ({ children }) => {
   const theme = useTheme();
+  const { t } = useTranslation();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
   return (
@@ -60,7 +62,7 @@ const AuthLayout = ({ children }) => {
             component="h1"
             gutterBottom
           >
-            Dijital Terapi Asistanı
+            {t("digitalTherapyAssistant")}
           </Typography>
           <Typography variant="body1" style={{ marginTop: "16px" }}>
             Ruh sağlığınızı iyileştirmek için yapay zeka destekli çözüm. Günlük

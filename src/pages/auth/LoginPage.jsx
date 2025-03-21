@@ -48,10 +48,10 @@ const LoginPage = () => {
     <Box>
       <Box sx={{ textAlign: "center", mb: 4 }}>
         <Typography variant="h4" component="h1" gutterBottom>
-          Dijital Terapi Asistanı
+          {t("digitalTherapyAssistant")}
         </Typography>
         <Typography variant="subtitle1" color="text.secondary">
-          Hesabınıza giriş yapın
+          {t("loginToYourAccount")}
         </Typography>
       </Box>
 
@@ -65,11 +65,11 @@ const LoginPage = () => {
         <Controller
           name="UsernameOrEmail"
           control={control}
-          rules={{ required: "Kullanıcı adı gerekli" }}
+          rules={{ required: t("usernameIsRequired") }}
           render={({ field }) => (
             <TextField
               {...field}
-              label={t("username")}
+              label={t("usernameOrEmail")}
               fullWidth
               margin="normal"
               error={!!errors.UsernameOrEmail}
@@ -82,7 +82,7 @@ const LoginPage = () => {
         <Controller
           name="password"
           control={control}
-          rules={{ required: "Şifre gerekli" }}
+          rules={{ required: t("passwordIsRequired") }}
           render={({ field }) => (
             <TextField
               {...field}
@@ -116,7 +116,7 @@ const LoginPage = () => {
             underline="hover"
             sx={{ cursor: "pointer" }}
           >
-            Şifremi unuttum
+            {t("forgotPassword")}
           </MuiLink>
         </Box>
 
@@ -128,19 +128,19 @@ const LoginPage = () => {
           sx={{ mt: 3, mb: 2 }}
           disabled={isLoading}
         >
-          {isLoading ? <CircularProgress size={24} /> : "Giriş Yap"}
+          {isLoading ? <CircularProgress size={24} /> : t("login")}
         </Button>
 
         <Box sx={{ textAlign: "center", mt: 2 }}>
           <Typography variant="body2">
-            Hesabınız yok mu?{" "}
+            {t("dontHaveAnAccount")}{" "}
             <MuiLink
               component={Link}
               to="/register"
               underline="hover"
               sx={{ cursor: "pointer" }}
             >
-              Kayıt ol
+              {t("register")}
             </MuiLink>
           </Typography>
         </Box>

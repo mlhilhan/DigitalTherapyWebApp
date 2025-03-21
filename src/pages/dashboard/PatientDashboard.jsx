@@ -5,7 +5,7 @@ import PatientHome from "../patient/PatientHome";
 import MoodJournal from "../patient/MoodJournal";
 import TherapyChat from "../patient/TherapyChat";
 import Appointments from "../patient/Appointments";
-import Profile from "../patient/Profile";
+import PatientProfile from "../patient/PatientProfile";
 
 const PatientDashboard = () => {
   return (
@@ -14,7 +14,7 @@ const PatientDashboard = () => {
       <Route path="/mood-journal" element={<MoodJournal />} />
       <Route path="/therapy-chat" element={<TherapyChat />} />
       <Route path="/appointments" element={<Appointments />} />
-      <Route path="/profile" element={<Profile />} />
+      <Route path="/profile" element={<PatientProfile />} />
     </Routes>
   );
 };

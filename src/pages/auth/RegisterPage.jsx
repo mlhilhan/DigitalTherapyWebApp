@@ -1,4 +1,3 @@
-// src/pages/auth/RegisterPage.jsx
 import { useState } from "react";
 import {
   TextField,
@@ -17,11 +16,13 @@ import { Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { useForm, Controller } from "react-hook-form";
 import { registerUser } from "../../features/auth/authSlice";
+import { useTranslation } from "react-i18next";
 
 const RegisterPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const dispatch = useDispatch();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { isLoading, error } = useSelector((state) => state.auth);
 
@@ -60,7 +61,7 @@ const RegisterPage = () => {
     <Box>
       <Box sx={{ textAlign: "center", mb: 4 }}>
         <Typography variant="h4" component="h1" gutterBottom>
-          Dijital Terapi Asistanı
+          {t("digitalTherapyAssistant")}
         </Typography>
         <Typography variant="subtitle1" color="text.secondary">
           Yeni hesap oluşturun
@@ -228,7 +229,7 @@ const RegisterPage = () => {
               underline="hover"
               sx={{ cursor: "pointer" }}
             >
-              Giriş yap
+              {t("login")}
             </MuiLink>
           </Typography>
         </Box>

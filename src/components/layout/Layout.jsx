@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   AppBar,
   Box,
@@ -15,6 +15,8 @@ import {
   Avatar,
   Menu,
   MenuItem,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import {
   Menu as MenuIcon,
@@ -31,8 +33,10 @@ import {
   Business,
   Settings,
   Note,
+  ChevronLeft,
+  AccountCircleOutlined,
 } from "@mui/icons-material";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import useResponsive from "../../hooks/useResponsive";
 import { logoutUser } from "../../features/auth/authSlice";
@@ -43,9 +47,16 @@ const Layout = ({ children }) => {
   const [drawerOpen, setDrawerOpen] = useState(!isMobile);
   const [anchorEl, setAnchorEl] = useState(null);
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
   const { t } = useTranslation();
+  const theme = useTheme();
+
+  // Screen
+  useEffect(() => {
+    setDrawerOpen(!isMobile);
+  }, [isMobile]);
 
   const ROLE_IDS = {
     PATIENT: "4b41d3bc-95cb-4758-8c01-c5487707931e",
@@ -76,166 +87,145 @@ const Layout = ({ children }) => {
 
   let menuItems = [];
   let dashboardPrefix = "/";
-  debugger;
-  switch (user?.role?.roleId) {
-    case ROLE_IDS.PATIENT:
-      dashboardPrefix = "/patient-dashboard";
-      menuItems = [
-        {
-          text: t("patient-dashboard"),
-          icon: <Dashboard />,
-          path: `${dashboardPrefix}/`,
-        },
-        {
-          text: t("moodJournal"),
-          icon: <EmojiEmotions />,
-          path: `${dashboardPrefix}/mood-journal`,
-        },
-        {
-          text: t("therapyChat"),
-          icon: <Chat />,
-          path: `${dashboardPrefix}/therapy-chat`,
-        },
-        {
-          text: t("appointments"),
-          icon: <CalendarToday />,
-          path: `${dashboardPrefix}/appointments`,
-        },
-        {
-          text: t("profile"),
-          icon: <Person />,
-          path: `${dashboardPrefix}/profile`,
-        },
-      ];
-      break;
-    case ROLE_IDS.PSYCHOLOGIST:
-      dashboardPrefix = "/psychologist-dashboard";
-      menuItems = [
-        {
-          text: t("dashboard"),
-          icon: <Dashboard />,
-          path: `${dashboardPrefix}/`,
-        },
-        {
-          text: t("patients"),
-          icon: <People />,
-          path: `${dashboardPrefix}/patients`,
-        },
-        {
-          text: t("appointments"),
-          icon: <CalendarToday />,
-          path: `${dashboardPrefix}/appointments`,
-        },
-        {
-          text: t("patientNotes"),
-          icon: <Note />,
-          path: `${dashboardPrefix}/patient-notes`,
-        },
-        {
-          text: t("profile"),
-          icon: <Person />,
-          path: `${dashboardPrefix}/profile`,
-        },
-      ];
-      break;
-    case ROLE_IDS.INSTITUTION:
-      dashboardPrefix = "/institution-dashboard";
-      menuItems = [
-        {
-          text: t("dashboard"),
-          icon: <Dashboard />,
-          path: `${dashboardPrefix}/`,
-        },
-        {
-          text: t("psychologists"),
-          icon: <Psychology />,
-          path: `${dashboardPrefix}/psychologists`,
-        },
-        {
-          text: t("patients"),
-          icon: <People />,
-          path: `${dashboardPrefix}/patients`,
-        },
-        {
-          text: t("appointments"),
-          icon: <CalendarToday />,
-          path: `${dashboardPrefix}/appointments`,
-        },
-        {
-          text: t("analytics"),
-          icon: <BarChart />,
-          path: `${dashboardPrefix}/analytics`,
-        },
-        {
-          text: t("profile"),
-          icon: <Business />,
-          path: `${dashboardPrefix}/profile`,
-        },
-      ];
-      break;
-    case ROLE_IDS.ADMIN:
-      dashboardPrefix = "/admin-dashboard";
-      menuItems = [
-        {
-          text: t("dashboard"),
-          icon: <DashboardCustomize />,
-          path: `${dashboardPrefix}/`,
-        },
-        {
-          text: t("users"),
-          icon: <People />,
-          path: `${dashboardPrefix}/users`,
-        },
-        {
-          text: t("institutions"),
-          icon: <Business />,
-          path: `${dashboardPrefix}/institutions`,
-        },
-        {
-          text: t("settings"),
-          icon: <Settings />,
-          path: `${dashboardPrefix}/settings`,
-        },
-        {
-          text: t("profile"),
-          icon: <Person />,
-          path: `${dashboardPrefix}/profile`,
-        },
-      ];
-      break;
-    default:
-      menuItems = [{ text: t("dashboard"), icon: <Dashboard />, path: "/" }];
+
+  // Kullanıcı rolüne göre menü öğelerini belirle
+  if (user && user.role) {
+    switch (user.role.roleId) {
+      case ROLE_IDS.PATIENT:
+        dashboardPrefix = "/patient-dashboard";
+        menuItems = [
+          {
+            text: t("homePage"),
+            icon: <Dashboard />,
+            path: `${dashboardPrefix}`,
+          },
+          {
+            text: t("moodJournal"),
+            icon: <EmojiEmotions />,
+            path: `${dashboardPrefix}/mood-journal`,
+          },
+          {
+            text: t("therapyChat"),
+            icon: <Chat />,
+            path: `${dashboardPrefix}/therapy-chat`,
+          },
+          {
+            text: t("appointments"),
+            icon: <CalendarToday />,
+            path: `${dashboardPrefix}/appointments`,
+          },
+          {
+            text: t("profile"),
+            icon: <Person />,
+            path: `${dashboardPrefix}/profile`,
+          },
+        ];
+        break;
+      case ROLE_IDS.PSYCHOLOGIST:
+        dashboardPrefix = "/psychologist-dashboard";
+        menuItems = [
+          {
+            text: t("homePage"),
+            icon: <Dashboard />,
+            path: `${dashboardPrefix}`,
+          },
+          {
+            text: t("patients"),
+            icon: <People />,
+            path: `${dashboardPrefix}/patients`,
+          },
+          {
+            text: t("appointments"),
+            icon: <CalendarToday />,
+            path: `${dashboardPrefix}/appointments`,
+          },
+          {
+            text: t("patientNotes"),
+            icon: <Note />,
+            path: `${dashboardPrefix}/patient-notes`,
+          },
+          {
+            text: t("profile"),
+            icon: <Person />,
+            path: `/psychologist/profile`,
+          },
+        ];
+        break;
+      case ROLE_IDS.INSTITUTION:
+        dashboardPrefix = "/institution-dashboard";
+        menuItems = [
+          {
+            text: t("homePage"),
+            icon: <Dashboard />,
+            path: `${dashboardPrefix}`,
+          },
+          {
+            text: t("psychologists"),
+            icon: <Psychology />,
+            path: `${dashboardPrefix}/psychologists`,
+          },
+          {
+            text: t("patients"),
+            icon: <People />,
+            path: `${dashboardPrefix}/patients`,
+          },
+          {
+            text: t("appointments"),
+            icon: <CalendarToday />,
+            path: `${dashboardPrefix}/appointments`,
+          },
+          {
+            text: t("analytics"),
+            icon: <BarChart />,
+            path: `${dashboardPrefix}/analytics`,
+          },
+          {
+            text: t("profile"),
+            icon: <Business />,
+            path: `/institution/profile`,
+          },
+        ];
+        break;
+      case ROLE_IDS.ADMIN:
+        dashboardPrefix = "/admin-dashboard";
+        menuItems = [
+          {
+            text: t("homePPage"),
+            icon: <DashboardCustomize />,
+            path: `${dashboardPrefix}`,
+          },
+          {
+            text: t("users"),
+            icon: <People />,
+            path: `${dashboardPrefix}/users`,
+          },
+          {
+            text: t("institutions"),
+            icon: <Business />,
+            path: `${dashboardPrefix}/institutions`,
+          },
+          {
+            text: t("settings"),
+            icon: <Settings />,
+            path: `${dashboardPrefix}/settings`,
+          },
+          {
+            text: t("profile"),
+            icon: <Person />,
+            path: `/admin/profile`,
+          },
+        ];
+        break;
+      default:
+        menuItems = [{ text: t("homePage"), icon: <Dashboard />, path: "/" }];
+    }
+  } else {
+    // Default Menu
+    menuItems = [
+      { text: t("homePage"), icon: <Dashboard />, path: "/" },
+      { text: t("profile"), icon: <Person />, path: "/profile" },
+    ];
   }
-
-  // const menuItems = [
-  //   { text: "Ana Sayfa", icon: <Dashboard />, path: "/dashboard" },
-  //   {
-  //     text: "Ruh Hali Günlüğü",
-  //     icon: <EmojiEmotions />,
-  //     path: "/mood-journal",
-  //   },
-  //   { text: "Terapi Asistanı", icon: <Chat />, path: "/therapy-assistant" },
-  //   { text: "Profil", icon: <Person />, path: "/profile" },
-  // ];
-
-  const drawer = (
-    <div>
-      <Toolbar sx={{ justifyContent: "center" }}>
-        <Typography variant="h6" color="primary">
-          Dijital Terapi
-        </Typography>
-      </Toolbar>
-      <Divider />
-      <List>
-        {menuItems.map((item) => (
-          <ListItem button key={item.text} onClick={() => navigate(item.path)}>
-            <ListItemIcon>{item.icon}</ListItemIcon>
-            <ListItemText primary={item.text} />
-          </ListItem>
-        ))}
-      </List>
-    </div>
-  );
 
   return (
     <Box sx={{ display: "flex" }}>
@@ -244,6 +234,10 @@ const Layout = ({ children }) => {
         sx={{
           width: { sm: `calc(100% - ${drawerOpen ? drawerWidth : 0}px)` },
           ml: { sm: `${drawerOpen ? drawerWidth : 0}px` },
+          transition: theme.transitions.create(["margin", "width"], {
+            easing: theme.transitions.easing.sharp,
+            duration: theme.transitions.duration.leavingScreen,
+          }),
         }}
       >
         <Toolbar>
@@ -251,12 +245,12 @@ const Layout = ({ children }) => {
             color="inherit"
             edge="start"
             onClick={handleDrawerToggle}
-            sx={{ mr: 2, display: { sm: "none" } }}
+            sx={{ mr: 2 }}
           >
             <MenuIcon />
           </IconButton>
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            Dijital Terapi Asistanı
+            {t("digitalTherapyAssistant")}
           </Typography>
           <IconButton onClick={handleProfileMenuOpen} color="inherit">
             <Avatar sx={{ width: 32, height: 32 }}>
@@ -267,44 +261,45 @@ const Layout = ({ children }) => {
             anchorEl={anchorEl}
             open={Boolean(anchorEl)}
             onClose={handleProfileMenuClose}
+            anchorOrigin={{
+              vertical: "bottom",
+              horizontal: "right",
+            }}
+            transformOrigin={{
+              vertical: "top",
+              horizontal: "right",
+            }}
           >
             <MenuItem
               onClick={() => {
                 handleProfileMenuClose();
-                navigate("/profile");
+                if (user?.role?.roleId === ROLE_IDS.PATIENT) {
+                  navigate("/patient-dashboard/profile");
+                } else if (user?.role?.roleId === ROLE_IDS.PSYCHOLOGIST) {
+                  navigate("/psychologist-dashboard/profile");
+                } else if (user?.role?.roleId === ROLE_IDS.INSTITUTION) {
+                  navigate("/institution-dashboard/profile");
+                } else if (user?.role?.roleId === ROLE_IDS.ADMIN) {
+                  navigate("/admin-dashboard/profile");
+                } else {
+                  navigate("/profile");
+                }
               }}
             >
-              Profil
+              <ListItemIcon>
+                <AccountCircleOutlined fontSize="small" />
+              </ListItemIcon>
+              {t("profile")}
             </MenuItem>
             <MenuItem onClick={handleLogout}>
               <ListItemIcon>
                 <Logout fontSize="small" />
               </ListItemIcon>
-              Çıkış Yap
+              {t("logout")}
             </MenuItem>
           </Menu>
         </Toolbar>
       </AppBar>
-
-      {/* <Box
-        component="nav"
-        sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
-      >
-        <Drawer
-          variant={isMobile ? "temporary" : "persistent"}
-          open={drawerOpen}
-          onClose={handleDrawerToggle}
-          ModalProps={{ keepMounted: true }}
-          sx={{
-            "& .MuiDrawer-paper": {
-              boxSizing: "border-box",
-              width: drawerWidth,
-            },
-          }}
-        >
-          {drawer}
-        </Drawer>
-      </Box> */}
 
       <Box
         component="nav"
@@ -323,11 +318,21 @@ const Layout = ({ children }) => {
           }}
         >
           <div>
-            <Toolbar sx={{ justifyContent: "center" }}>
-              <Typography variant="h6" color="primary">
-                {t("digitalTherapy")}
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                p: 1,
+              }}
+            >
+              <Typography variant="h6" color="primary" sx={{ ml: 1 }}>
+                {t("menu")}
               </Typography>
-            </Toolbar>
+              <IconButton onClick={handleDrawerToggle}>
+                <ChevronLeft />
+              </IconButton>
+            </Box>
             <Divider />
             <List>
               {menuItems.map((item) => (
@@ -335,6 +340,15 @@ const Layout = ({ children }) => {
                   button
                   key={item.text}
                   onClick={() => navigate(item.path)}
+                  selected={location.pathname === item.path}
+                  sx={{
+                    "&.Mui-selected": {
+                      backgroundColor: "rgba(0, 0, 0, 0.08)",
+                      "&:hover": {
+                        backgroundColor: "rgba(0, 0, 0, 0.12)",
+                      },
+                    },
+                  }}
                 >
                   <ListItemIcon>{item.icon}</ListItemIcon>
                   <ListItemText primary={item.text} />
@@ -355,6 +369,10 @@ const Layout = ({ children }) => {
           },
           ml: { sm: `${drawerOpen ? drawerWidth : 0}px` },
           mt: "64px",
+          transition: theme.transitions.create(["margin", "width"], {
+            easing: theme.transitions.easing.easeOut,
+            duration: theme.transitions.duration.enteringScreen,
+          }),
         }}
       >
         <Container maxWidth="lg" sx={{ py: 2 }}>

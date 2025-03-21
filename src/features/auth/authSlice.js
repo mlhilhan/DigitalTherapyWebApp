@@ -1,5 +1,16 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { authAPI } from "../../api/auth";
+import { userProfileAPI } from "../../api/userProfile";
+
+const getUserFromStorage = () => {
+  try {
+    const userStr = localStorage.getItem("user");
+    return userStr ? JSON.parse(userStr) : null;
+  } catch (e) {
+    console.error("User storage parse error:", e);
+    return null;
+  }
+};
 
 export const loginUser = createAsyncThunk(
   "auth/login",
@@ -70,13 +81,17 @@ export const logoutUser = createAsyncThunk(
 
 export const checkAuth = createAsyncThunk(
   "auth/check",
-  async (_, { rejectWithValue }) => {
+  async (_, { rejectWithValue, dispatch }) => {
     try {
       const accessToken = localStorage.getItem("accessToken");
       const refreshToken = localStorage.getItem("refreshToken");
 
       if (!accessToken || !refreshToken) {
         return { isAuthenticated: false };
+      }
+
+      if (accessToken) {
+        dispatch(loadUserData());
       }
 
       return {
@@ -90,11 +105,35 @@ export const checkAuth = createAsyncThunk(
   }
 );
 
+export const loadUserData = createAsyncThunk(
+  "auth/loadUser",
+  async (_, { rejectWithValue, getState }) => {
+    try {
+      const { auth } = getState();
+      if (!auth.isAuthenticated) {
+        return rejectWithValue("User not authenticated");
+      }
+
+      const response = await userProfileAPI.getProfile();
+
+      if (!response.success) {
+        return rejectWithValue(response.message || "Failed to load user data");
+      }
+
+      return response.user;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to load user data"
+      );
+    }
+  }
+);
+
 // Auth slice
 const authSlice = createSlice({
   name: "auth",
   initialState: {
-    user: null,
+    user: getUserFromStorage(),
     accessToken: localStorage.getItem("accessToken") || null,
     refreshToken: localStorage.getItem("refreshToken") || null,
     isAuthenticated: !!localStorage.getItem("accessToken"),
@@ -119,6 +158,7 @@ const authSlice = createSlice({
         state.user = action.payload.user;
         state.accessToken = action.payload.token;
         state.refreshToken = action.payload.refreshToken;
+        localStorage.setItem("user", JSON.stringify(action.payload.user));
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.isLoading = false;
@@ -144,6 +184,7 @@ const authSlice = createSlice({
         state.accessToken = null;
         state.refreshToken = null;
         state.isAuthenticated = false;
+        localStorage.removeItem("user");
       })
 
       // Check Auth
@@ -153,6 +194,24 @@ const authSlice = createSlice({
           state.accessToken = action.payload.accessToken;
           state.refreshToken = action.payload.refreshToken;
         }
+      })
+
+      // Load User Data
+      .addCase(loadUserData.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(loadUserData.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.user = action.payload;
+      })
+      .addCase(loadUserData.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload;
+        state.isAuthenticated = false;
+        state.accessToken = null;
+        state.refreshToken = null;
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
       });
   },
 });

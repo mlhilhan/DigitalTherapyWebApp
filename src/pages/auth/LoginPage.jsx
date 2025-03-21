@@ -15,12 +15,14 @@ import { Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { useForm, Controller } from "react-hook-form";
 import { loginUser } from "../../features/auth/authSlice";
+import { useTranslation } from "react-i18next";
 
 const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { isLoading, error } = useSelector((state) => state.auth);
+  const { t } = useTranslation();
 
   const {
     control,
@@ -67,7 +69,7 @@ const LoginPage = () => {
           render={({ field }) => (
             <TextField
               {...field}
-              label="Kullanıcı Adı"
+              label={t("username")}
               fullWidth
               margin="normal"
               error={!!errors.UsernameOrEmail}
@@ -84,7 +86,7 @@ const LoginPage = () => {
           render={({ field }) => (
             <TextField
               {...field}
-              label="Şifre"
+              label={t("password")}
               type={showPassword ? "text" : "password"}
               fullWidth
               margin="normal"

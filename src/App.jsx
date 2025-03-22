@@ -6,6 +6,8 @@ import theme from "./theme";
 import store from "./store";
 import AppRoutes from "./routes";
 import "./i18n/i18n";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 function App() {
   return (
@@ -14,6 +16,18 @@ function App() {
         <CssBaseline />
         <BrowserRouter>
           <AppRoutes />
+
+          <ToastContainer
+            position="top-right"
+            autoClose={3000}
+            hideProgressBar={false}
+            newestOnTop
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+          />
         </BrowserRouter>
       </ThemeProvider>
     </ReduxProvider>

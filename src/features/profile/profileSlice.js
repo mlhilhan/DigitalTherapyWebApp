@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { patientProfileAPI } from "../../api/profile";
+import config from "../../config";
 import i18n from "../../i18n/i18n";
 
 export const GetCurrentPatientProfile = createAsyncThunk(
@@ -44,25 +45,6 @@ export const GetPatientProfile = createAsyncThunk(
   }
 );
 
-// export const UpdatePatientProfile = createAsyncThunk(
-//   "profile/UpdatePatientProfile",
-//   async ({ id, profileData }, { rejectWithValue }) => {
-//     try {
-//       const response = await patientProfileAPI.updateProfile(id, profileData);
-
-//       if (!response.success) {
-//         return rejectWithValue(response.message || "Profil güncellenemedi");
-//       }
-
-//       return response.data;
-//     } catch (error) {
-//       return rejectWithValue(
-//         error.response?.data?.message || "Profil güncellenemedi"
-//       );
-//     }
-//   }
-// );
-
 export const UpdatePatientProfile = createAsyncThunk(
   "profile/UpdatePatientProfile",
   async (formData, { rejectWithValue, getState }) => {
@@ -73,19 +55,23 @@ export const UpdatePatientProfile = createAsyncThunk(
       const response = await patientProfileAPI.updateProfile(userId, formData);
 
       if (!response.success) {
-        return rejectWithValue(response.message || "Profil güncellenemedi");
+        return rejectWithValue({
+          message: response.message || "Profil güncellenemedi",
+          statusCode: 200,
+        });
       }
 
       return response.data;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Profil güncellenemedi"
-      );
+      return rejectWithValue({
+        message: error.response?.data?.message || "Profil güncellenemedi",
+        statusCode: error.response?.status,
+      });
     }
   }
 );
 
-export const UploadProfileImage = createAsyncThunk(
+export const UploadProfileImageX = createAsyncThunk(
   "profile/UploadProfileImage",
   async ({ id, imageFile }, { rejectWithValue }) => {
     try {
@@ -99,6 +85,33 @@ export const UploadProfileImage = createAsyncThunk(
       }
 
       return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Profil resmi yüklenemedi"
+      );
+    }
+  }
+);
+
+export const UploadProfileImage = createAsyncThunk(
+  "profile/UploadProfileImage",
+  async ({ id, imageFile }, { rejectWithValue, dispatch }) => {
+    try {
+      const formData = new FormData();
+      formData.append("Image", imageFile);
+
+      const response = await patientProfileAPI.uploadProfileImage(id, formData);
+
+      if (!response.success) {
+        return rejectWithValue(response.message || "Profil resmi yüklenemedi");
+      }
+
+      const baseUrl = config.apiBaseUrl;
+      const avatarUrl = `${baseUrl}${response.data.avatarUrl}`;
+
+      await dispatch(GetCurrentPatientProfile());
+
+      return { ...response.data, avatarUrl };
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Profil resmi yüklenemedi"
@@ -223,8 +236,11 @@ const profileSlice = createSlice({
       })
       .addCase(UploadProfileImage.fulfilled, (state, action) => {
         state.loading = false;
-        state.profile = action.payload; // Güncel profil bilgisini al
         state.success = true;
+        state.profile = {
+          ...state.profile,
+          avatarUrl: action.payload.avatarUrl,
+        };
       })
       .addCase(UploadProfileImage.rejected, (state, action) => {
         state.loading = false;

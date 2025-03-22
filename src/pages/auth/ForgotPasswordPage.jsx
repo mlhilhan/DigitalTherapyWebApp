@@ -75,7 +75,6 @@ const ForgotPasswordPage = () => {
             <Alert severity="success" sx={{ mb: 3 }}>
               {t("passwordResetEmailSent")}
             </Alert>
-            {/* <Typography paragraph>{t("passwordResetInstructions")}</Typography> */}
             <Button
               component={Link}
               to="/login"

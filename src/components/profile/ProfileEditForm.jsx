@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Button,
@@ -22,8 +22,16 @@ import { LocalizationProvider, DatePicker } from "@mui/x-date-pickers";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import trLocale from "date-fns/locale/tr";
 import { useTranslation } from "react-i18next";
+import { formatDateToISO } from "../../utils/dateUtils";
 
-const ProfileEditForm = ({ profile, onSave, loading, error, fields }) => {
+const ProfileEditForm = ({
+  profile,
+  onSave,
+  onAvatarUpload,
+  loading,
+  error,
+  fields,
+}) => {
   const [avatar, setAvatar] = useState(profile?.avatarUrl || null);
   const [avatarFile, setAvatarFile] = useState(null);
   const { t } = useTranslation();
@@ -41,23 +49,25 @@ const ProfileEditForm = ({ profile, onSave, loading, error, fields }) => {
       const file = event.target.files[0];
       setAvatarFile(file);
       setAvatar(URL.createObjectURL(file));
+
+      if (onAvatarUpload) {
+        onAvatarUpload(file);
+      }
     }
   };
 
   const onSubmit = (data) => {
     const formData = new FormData();
 
-    // Append all form fields
+    if (data.birthDate) {
+      data.birthDate = formatDateToISO(data.birthDate);
+    }
+
     Object.keys(data).forEach((key) => {
       if (data[key] !== undefined && data[key] !== null) {
         formData.append(key, data[key]);
       }
     });
-
-    // Append avatar if changed
-    if (avatarFile) {
-      formData.append("avatar", avatarFile);
-    }
 
     onSave(formData);
   };

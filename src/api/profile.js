@@ -25,12 +25,9 @@ export const patientProfileAPI = {
   },
 
   uploadProfileImage: async (id, imageFile) => {
-    const formData = new FormData();
-    formData.append("Image", imageFile);
-
     const response = await api.post(
       `/PatientProfiles/UploadProfileImage/${id}/avatar`,
-      formData,
+      imageFile,
       {
         headers: {
           "Content-Type": "multipart/form-data",

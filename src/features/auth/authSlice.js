@@ -155,6 +155,28 @@ export const loadUserData = createAsyncThunk(
   }
 );
 
+export const UpdateUserContact = createAsyncThunk(
+  "auth/UpdateUserContact",
+  async (contactData, { rejectWithValue }) => {
+    try {
+      const response = await authAPI.updateUserContact(contactData);
+
+      if (!response.success) {
+        return rejectWithValue(
+          response.message || i18n.t("contactInformationCouldNotUpdated")
+        );
+      }
+
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message ||
+          i18n.t("contactInformationCouldNotUpdated")
+      );
+    }
+  }
+);
+
 // Auth slice
 const authSlice = createSlice({
   name: "auth",

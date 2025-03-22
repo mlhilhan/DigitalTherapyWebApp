@@ -22,7 +22,9 @@ import { useTranslation } from "react-i18next";
 import {
   GetPatientProfile,
   UpdatePatientProfile,
+  UploadProfileImage,
 } from "../../features/profile/profileSlice";
+import { toast } from "react-toastify";
 
 function TabPanel({ children, value, index, ...other }) {
   return (
@@ -37,11 +39,11 @@ function TabPanel({ children, value, index, ...other }) {
       {value === index && (
         <Box
           sx={{
-            p: 3,
+            p: { xs: 2, sm: 3 },
             flexGrow: 1,
             display: "flex",
             flexDirection: "column",
-            minWidth: "800px",
+            width: "100%",
           }}
         >
           {children}
@@ -78,9 +80,37 @@ const PatientProfile = () => {
       .unwrap()
       .then(() => {
         setIsEditing(false);
+        toast.success(t("profileUpdatedSuccessfully"));
       })
       .catch((error) => {
-        console.error("Error:", error);
+        if (error.statusCode === 200) {
+          toast.error(error.message);
+        } else {
+          toast.error(t("profileupdatedFailed"));
+        }
+      });
+  };
+
+  const handleAvatarUpload = (file) => {
+    if (!file.type.startsWith("image/")) {
+      toast.error(t("invalidImageFormat"));
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error(t("imageTooLarge"));
+      return;
+    }
+
+    dispatch(UploadProfileImage({ id: user.userId, imageFile: file }))
+      .unwrap()
+      .then(() => {
+        toast.success(t("profileImageUpdated"));
+        dispatch(GetPatientProfile(user.userId));
+      })
+      .catch((error) => {
+        const message = t("profileImageUpdateFailed") + ": " + error;
+        toast.error(message);
       });
   };
 
@@ -124,13 +154,35 @@ const PatientProfile = () => {
         { value: "en", label: "English" },
       ],
     },
-    { name: "email", label: t("email"), type: "email", disabled: true },
+    {
+      name: "email",
+      label: t("email"),
+      type: "email",
+      rules: {
+        required: t("emailIsRequired"),
+        pattern: {
+          value: /\S+@\S+\.\S+/,
+          message: t("invalidEmailFormat"),
+        },
+      },
+    },
+    {
+      name: "phoneNumber",
+      label: t("phoneNumber"),
+      type: "text",
+      rules: {
+        pattern: {
+          value: /^(\+90|0)?[0-9]{10}$/,
+          message: t("invalidPhoneFormat"),
+        },
+      },
+    },
   ];
 
   // Loading state
   if (loading && !profile) {
     return (
-      <Container maxWidth="lg" sx={{ mt: 4 }}>
+      <Container maxWidth="md" sx={{ mt: 4 }}>
         <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
           <Skeleton
             variant="rectangular"
@@ -146,7 +198,7 @@ const PatientProfile = () => {
   }
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 8 }}>
+    <Container maxWidth="md" sx={{ mt: 4, mb: 8 }}>
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
           {error}
@@ -161,6 +213,7 @@ const PatientProfile = () => {
           <ProfileEditForm
             profile={profile}
             onSave={handleProfileUpdate}
+            onAvatarUpload={handleAvatarUpload}
             loading={loading}
             error={error}
             fields={profileFields}
@@ -180,7 +233,7 @@ const PatientProfile = () => {
           <Paper
             elevation={3}
             sx={{
-              p: 3,
+              p: { xs: 2, sm: 3 },
               mb: 4,
               borderRadius: 2,
               background: "linear-gradient(to right, #e0f7fa, #b2ebf2)",
@@ -192,19 +245,35 @@ const PatientProfile = () => {
                 variant="contained"
                 startIcon={<Edit />}
                 onClick={handleEditToggle}
+                sx={{ fontSize: { xs: "0.875rem", sm: "1rem" } }}
               >
                 {t("edit")}
               </Button>
             </Box>
 
-            <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: { xs: "column", sm: "row" },
+                alignItems: "center",
+                mb: 3,
+              }}
+            >
               <Avatar
                 src={profile?.avatarUrl}
                 alt={profile?.firstName}
-                sx={{ width: 100, height: 100, mr: 3 }}
+                sx={{
+                  width: 100,
+                  height: 100,
+                  mr: { xs: 0, sm: 3 },
+                  mb: { xs: 2, sm: 0 },
+                }}
               />
-              <Box>
-                <Typography variant="h4">
+              <Box sx={{ textAlign: { xs: "center", sm: "left" } }}>
+                <Typography
+                  variant="h4"
+                  sx={{ fontSize: { xs: "1.5rem", sm: "2rem" } }}
+                >
                   {profile?.firstName} {profile?.lastName}
                 </Typography>
                 <Typography variant="subtitle1" color="textSecondary">
@@ -237,8 +306,8 @@ const PatientProfile = () => {
             </Tabs>
 
             <TabPanel value={tabValue} index={0}>
-              <Grid container spacing={3}>
-                <Grid item xs={12} md={6}>
+              <Grid container spacing={{ xs: 2, sm: 3 }}>
+                <Grid item xs={12} sm={6}>
                   <Typography variant="subtitle2" color="textSecondary">
                     {t("fullName")}
                   </Typography>
@@ -247,7 +316,7 @@ const PatientProfile = () => {
                   </Typography>
                 </Grid>
 
-                <Grid item xs={12} md={6}>
+                <Grid item xs={12} sm={6}>
                   <Typography variant="subtitle2" color="textSecondary">
                     {t("birthdate")}
                   </Typography>
@@ -260,7 +329,7 @@ const PatientProfile = () => {
                   </Typography>
                 </Grid>
 
-                <Grid item xs={12} md={6}>
+                <Grid item xs={12} sm={6}>
                   <Typography variant="subtitle2" color="textSecondary">
                     {t("gender")}
                   </Typography>
@@ -273,14 +342,14 @@ const PatientProfile = () => {
                   </Typography>
                 </Grid>
 
-                <Grid item xs={12} md={6}>
+                <Grid item xs={12} sm={6}>
                   <Typography variant="subtitle2" color="textSecondary">
                     {t("email")}
                   </Typography>
                   <Typography variant="body1">{user?.email}</Typography>
                 </Grid>
 
-                <Grid item xs={12} md={6}>
+                <Grid item xs={12} sm={6}>
                   <Typography variant="subtitle2" color="textSecondary">
                     {t("preferredLanguage")}
                   </Typography>
@@ -301,8 +370,8 @@ const PatientProfile = () => {
               </Typography>
               <Divider sx={{ mb: 3 }} />
 
-              <Grid container spacing={3}>
-                <Grid item xs={12} md={6}>
+              <Grid container spacing={{ xs: 2, sm: 3 }}>
+                <Grid item xs={12} sm={6}>
                   <Typography variant="subtitle2" color="textSecondary">
                     {t("notificationPreferences")}
                   </Typography>
@@ -311,7 +380,7 @@ const PatientProfile = () => {
                   </Typography>
                 </Grid>
 
-                <Grid item xs={12} md={6}>
+                <Grid item xs={12} sm={6}>
                   <Button variant="outlined" color="primary">
                     {t("changePassword")}
                   </Button>

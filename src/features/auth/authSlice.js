@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { authAPI } from "../../api/auth";
 import { userProfileAPI } from "../../api/userProfile";
+import i18n from "../../i18n/i18n";
 
 const getUserFromStorage = () => {
   try {
@@ -19,7 +20,7 @@ export const loginUser = createAsyncThunk(
       const response = await authAPI.login(UsernameOrEmail, password);
 
       if (!response.success) {
-        return rejectWithValue(response.message || "Login failed");
+        return rejectWithValue(response.message || i18n.t("loginFailed"));
       }
 
       localStorage.setItem("accessToken", response.token);
@@ -27,7 +28,9 @@ export const loginUser = createAsyncThunk(
 
       return response;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || "Login failed");
+      return rejectWithValue(
+        error.response?.data?.message || i18n.t("loginFailed")
+      );
     }
   }
 );
@@ -39,7 +42,7 @@ export const registerUser = createAsyncThunk(
       const response = await authAPI.register(userData);
 
       if (!response.success) {
-        return rejectWithValue(response.message || "Kayıt başarısız");
+        return rejectWithValue(response.message || i18n.t("registerFailed"));
       }
 
       if (response.success) {
@@ -54,7 +57,7 @@ export const registerUser = createAsyncThunk(
       return response;
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || "Kayıt başarısız"
+        error.response?.data?.message || i18n.t("registerFailed")
       );
     }
   }
@@ -73,7 +76,28 @@ export const logoutUser = createAsyncThunk(
       localStorage.removeItem("refreshToken");
 
       return rejectWithValue(
-        error.response?.data?.message || "Çıkış başarısız"
+        error.response?.data?.message || i18n.t("logoutFailed")
+      );
+    }
+  }
+);
+
+export const forgotPassword = createAsyncThunk(
+  "auth/ForgotPassword",
+  async ({ email }, { rejectWithValue }) => {
+    try {
+      const response = await authAPI.forgotPassword(email);
+
+      if (!response.success) {
+        return rejectWithValue(
+          response.message || i18n.t("passwordResetFailed")
+        );
+      }
+
+      return response;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || i18n.t("passwordResetFailed")
       );
     }
   }
@@ -111,19 +135,21 @@ export const loadUserData = createAsyncThunk(
     try {
       const { auth } = getState();
       if (!auth.isAuthenticated) {
-        return rejectWithValue("User not authenticated");
+        return rejectWithValue(i18n.t("userNotAuthenticated"));
       }
 
       const response = await userProfileAPI.getProfile();
 
       if (!response.success) {
-        return rejectWithValue(response.message || "Failed to load user data");
+        return rejectWithValue(
+          response.message || i18n.t("failedToLoadUserData")
+        );
       }
 
       return response.user;
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to load user data"
+        error.response?.data?.message || i18n.t("failedToLoadUserData")
       );
     }
   }
@@ -212,6 +238,19 @@ const authSlice = createSlice({
         state.refreshToken = null;
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
+      })
+
+      // Forgot Password
+      .addCase(forgotPassword.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(forgotPassword.fulfilled, (state) => {
+        state.isLoading = false;
+      })
+      .addCase(forgotPassword.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload;
       });
   },
 });

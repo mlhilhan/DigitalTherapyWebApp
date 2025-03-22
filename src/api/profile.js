@@ -1,52 +1,35 @@
 import api from "./axios";
 
-export const profileAPI = {
-  // Hasta profil metodları
-  getPatientProfile: async (userId) => {
-    const response = await api.get(`/Profiles/Patient/${userId}`);
+export const patientProfileAPI = {
+  getCurrentProfile: async () => {
+    const response = await api.get("/PatientProfiles/GetCurrentPatientProfile");
     return response.data;
   },
 
-  updatePatientProfile: async (userId, profileData) => {
-    const response = await api.put(`/Profiles/Patient/${userId}`, profileData);
+  getProfileById: async (id) => {
+    const response = await api.get(`/PatientProfiles/GetPatientProfile/${id}`);
     return response.data;
   },
 
-  // Psikolog profil metodları
-  getPsychologistProfile: async (userId) => {
-    const response = await api.get(`/Profiles/Psychologist/${userId}`);
-    return response.data;
-  },
-
-  updatePsychologistProfile: async (userId, profileData) => {
+  updateProfile: async (id, profileData) => {
     const response = await api.put(
-      `/Profiles/Psychologist/${userId}`,
-      profileData
+      `/PatientProfiles/UpdatePatientProfile/${id}`,
+      profileData,
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
     );
     return response.data;
   },
 
-  // Kurum profil metodları
-  getInstitutionProfile: async (userId) => {
-    const response = await api.get(`/Profiles/Institution/${userId}`);
-    return response.data;
-  },
-
-  updateInstitutionProfile: async (userId, profileData) => {
-    const response = await api.put(
-      `/Profiles/Institution/${userId}`,
-      profileData
-    );
-    return response.data;
-  },
-
-  // Dosya yükleme işlemleri
-  uploadProfileImage: async (userId, file, userType) => {
+  uploadProfileImage: async (id, imageFile) => {
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append("Image", imageFile);
 
     const response = await api.post(
-      `/Profiles/${userType}/${userId}/Image`,
+      `/PatientProfiles/UploadProfileImage/${id}/avatar`,
       formData,
       {
         headers: {
@@ -57,20 +40,17 @@ export const profileAPI = {
     return response.data;
   },
 
-  // İlişkili veriler
-  getInstitutionPsychologists: async (institutionId) => {
+  getPatientsByPsychologist: async (psychologistId) => {
     const response = await api.get(
-      `/Profiles/Institution/${institutionId}/Psychologists`
+      `/PatientProfiles/GetPatientsByPsychologist/${psychologistId}`
     );
     return response.data;
   },
 
-  getPsychologistInstitution: async (psychologistId) => {
+  getPatientsByInstitution: async (institutionId) => {
     const response = await api.get(
-      `/Profiles/Psychologist/${psychologistId}/Institution`
+      `/PatientProfiles/GetPatientsByInstitution/${institutionId}`
     );
     return response.data;
   },
 };
-
-export default profileAPI;

@@ -18,11 +18,11 @@ import { useSelector, useDispatch } from "react-redux";
 import { format } from "date-fns";
 import trLocale from "date-fns/locale/tr";
 import ProfileEditForm from "../../components/profile/ProfileEditForm";
-import {
-  fetchPatientProfile,
-  updatePatientProfile,
-} from "../../features/profile/profileSlice";
 import { useTranslation } from "react-i18next";
+import {
+  GetPatientProfile,
+  UpdatePatientProfile,
+} from "../../features/profile/profileSlice";
 
 function TabPanel({ children, value, index, ...other }) {
   return (
@@ -61,7 +61,7 @@ const PatientProfile = () => {
 
   useEffect(() => {
     if (user?.userId) {
-      dispatch(fetchPatientProfile(user.userId));
+      dispatch(GetPatientProfile(user.userId));
     }
   }, [dispatch, user]);
 
@@ -74,10 +74,13 @@ const PatientProfile = () => {
   };
 
   const handleProfileUpdate = (formData) => {
-    dispatch(updatePatientProfile(formData))
+    dispatch(UpdatePatientProfile(formData))
       .unwrap()
       .then(() => {
         setIsEditing(false);
+      })
+      .catch((error) => {
+        console.error("Error:", error);
       });
   };
 

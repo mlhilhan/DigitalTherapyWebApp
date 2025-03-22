@@ -31,6 +31,11 @@ export const authAPI = {
     });
     return response.data;
   },
+
+  forgotPassword: async (email) => {
+    const response = await api.post("/Auth/ForgotPassword", { email });
+    return response.data;
+  },
 };
 
 export default authAPI;

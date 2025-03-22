@@ -48,7 +48,7 @@ const RegisterPage = () => {
       const resultAction = await dispatch(registerUser(registerData));
 
       if (!resultAction.error) {
-        setSuccessMessage("Kayıt başarılı! Giriş yapılıyor...");
+        setSuccessMessage(t("registrationSuccessfulLoggingIn"));
       }
     } catch (err) {}
   };
@@ -64,7 +64,7 @@ const RegisterPage = () => {
           {t("digitalTherapyAssistant")}
         </Typography>
         <Typography variant="subtitle1" color="text.secondary">
-          Yeni hesap oluşturun
+          {t("createNewAccount")}
         </Typography>
       </Box>
 
@@ -74,7 +74,6 @@ const RegisterPage = () => {
         </Alert>
       )}
 
-      {/* Başarı toast mesajı */}
       <Snackbar
         open={!!successMessage}
         autoHideDuration={3000}
@@ -86,23 +85,21 @@ const RegisterPage = () => {
         </Alert>
       </Snackbar>
 
-      {/* Form içeriği... */}
       <form onSubmit={handleSubmit(onSubmit)}>
-        {/* Form alanları... */}
         <Controller
           name="username"
           control={control}
           rules={{
-            required: "Kullanıcı adı gerekli",
+            required: t("usernameIsRequired"),
             minLength: {
               value: 3,
-              message: "Kullanıcı adı en az 3 karakter olmalı",
+              message: t("usernameMustBeThreeCharacters"),
             },
           }}
           render={({ field }) => (
             <TextField
               {...field}
-              label="Kullanıcı Adı"
+              label={t("username")}
               fullWidth
               margin="normal"
               error={!!errors.username}
@@ -116,16 +113,16 @@ const RegisterPage = () => {
           name="email"
           control={control}
           rules={{
-            required: "E-posta gerekli",
+            required: t("emailIsRequired"),
             pattern: {
               value: /^\S+@\S+\.\S+$/,
-              message: "Geçerli bir e-posta adresi girin",
+              message: t("pleaseEnterValidEmail"),
             },
           }}
           render={({ field }) => (
             <TextField
               {...field}
-              label="E-posta"
+              label={t("email")}
               type="email"
               fullWidth
               margin="normal"
@@ -140,16 +137,16 @@ const RegisterPage = () => {
           name="password"
           control={control}
           rules={{
-            required: "Şifre gerekli",
+            required: t("passwordIsRequired"),
             minLength: {
               value: 6,
-              message: "Şifre en az 6 karakter olmalı",
+              message: t("passwordMustBeSixCharacters"),
             },
           }}
           render={({ field }) => (
             <TextField
               {...field}
-              label="Şifre"
+              label={t("password")}
               type={showPassword ? "text" : "password"}
               fullWidth
               margin="normal"
@@ -176,17 +173,18 @@ const RegisterPage = () => {
           name="confirmPassword"
           control={control}
           rules={{
-            required: "Şifre tekrarı gerekli",
+            required: t("againPasswordIsRequired"),
             validate: (val) => {
               if (watch("password") !== val) {
-                return "Şifreler eşleşmiyor";
+                var message = t("passwordsDoNotMatch");
+                return message;
               }
             },
           }}
           render={({ field }) => (
             <TextField
               {...field}
-              label="Şifre Tekrarı"
+              label={t("againPassword")}
               type={showPassword ? "text" : "password"}
               fullWidth
               margin="normal"
@@ -217,12 +215,12 @@ const RegisterPage = () => {
           sx={{ mt: 3, mb: 2 }}
           disabled={isLoading}
         >
-          {isLoading ? <CircularProgress size={24} /> : "Kayıt Ol"}
+          {isLoading ? <CircularProgress size={24} /> : t("register")}
         </Button>
 
         <Box sx={{ textAlign: "center", mt: 2 }}>
           <Typography variant="body2">
-            Zaten hesabınız var mı?{" "}
+            {t("doYouAlreadyHaveAnAccount")}{" "}
             <MuiLink
               component={Link}
               to="/login"

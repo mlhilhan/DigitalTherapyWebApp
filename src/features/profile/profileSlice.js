@@ -1,12 +1,12 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { profileAPI } from "../../api/profile";
+import { patientProfileAPI } from "../../api/profile";
+import i18n from "../../i18n/i18n";
 
-// Hasta profili getirme
-export const fetchPatientProfile = createAsyncThunk(
-  "profile/fetchPatientProfile",
-  async (userId, { rejectWithValue }) => {
+export const GetCurrentPatientProfile = createAsyncThunk(
+  "profile/GetCurrentPatientProfile",
+  async (_, { rejectWithValue }) => {
     try {
-      const response = await profileAPI.getPatientProfile(userId);
+      const response = await patientProfileAPI.getCurrentProfile();
 
       if (!response.success) {
         return rejectWithValue(
@@ -23,48 +23,11 @@ export const fetchPatientProfile = createAsyncThunk(
   }
 );
 
-// Psikolog profili getirme
-export const fetchPsychologistProfile = createAsyncThunk(
-  "profile/fetchPsychologistProfile",
+export const GetPatientProfile = createAsyncThunk(
+  "profile/GetPatientProfile",
   async (userId, { rejectWithValue }) => {
     try {
-      const response = await profileAPI.getPsychologistProfile(userId);
-
-      if (!response.success) {
-        return rejectWithValue(
-          response.message || "Profil bilgileri alınamadı"
-        );
-      }
-
-      // Eğer psikolog bir kuruma bağlıysa, kurum bilgilerini de al
-      let institutionData = null;
-      if (response.data.institutionId) {
-        const institutionResponse = await profileAPI.getPsychologistInstitution(
-          userId
-        );
-        if (institutionResponse.success) {
-          institutionData = institutionResponse.data;
-        }
-      }
-
-      return {
-        profile: response.data,
-        institution: institutionData,
-      };
-    } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Profil bilgileri alınamadı"
-      );
-    }
-  }
-);
-
-// Kurum profili getirme
-export const fetchInstitutionProfile = createAsyncThunk(
-  "profile/fetchInstitutionProfile",
-  async (userId, { rejectWithValue }) => {
-    try {
-      const response = await profileAPI.getInstitutionProfile(userId);
+      const response = await patientProfileAPI.getProfileById(userId);
 
       if (!response.success) {
         return rejectWithValue(
@@ -81,28 +44,33 @@ export const fetchInstitutionProfile = createAsyncThunk(
   }
 );
 
-// Hasta profili güncelleme
-export const updatePatientProfile = createAsyncThunk(
-  "profile/updatePatientProfile",
-  async (profileData, { rejectWithValue, getState }) => {
+// export const UpdatePatientProfile = createAsyncThunk(
+//   "profile/UpdatePatientProfile",
+//   async ({ id, profileData }, { rejectWithValue }) => {
+//     try {
+//       const response = await patientProfileAPI.updateProfile(id, profileData);
+
+//       if (!response.success) {
+//         return rejectWithValue(response.message || "Profil güncellenemedi");
+//       }
+
+//       return response.data;
+//     } catch (error) {
+//       return rejectWithValue(
+//         error.response?.data?.message || "Profil güncellenemedi"
+//       );
+//     }
+//   }
+// );
+
+export const UpdatePatientProfile = createAsyncThunk(
+  "profile/UpdatePatientProfile",
+  async (formData, { rejectWithValue, getState }) => {
     try {
       const { auth } = getState();
       const userId = auth.user.userId;
 
-      // Eğer avatar dosyası varsa, önce onu yükle
-      if (profileData.get("avatar")) {
-        await profileAPI.uploadProfileImage(
-          userId,
-          profileData.get("avatar"),
-          "Patient"
-        );
-        profileData.delete("avatar"); // FormData'dan dosyayı kaldır
-      }
-
-      const response = await profileAPI.updatePatientProfile(
-        userId,
-        profileData
-      );
+      const response = await patientProfileAPI.updateProfile(userId, formData);
 
       if (!response.success) {
         return rejectWithValue(response.message || "Profil güncellenemedi");
@@ -117,87 +85,65 @@ export const updatePatientProfile = createAsyncThunk(
   }
 );
 
-// Psikolog profili güncelleme
-export const updatePsychologistProfile = createAsyncThunk(
-  "profile/updatePsychologistProfile",
-  async (profileData, { rejectWithValue, getState }) => {
+export const UploadProfileImage = createAsyncThunk(
+  "profile/UploadProfileImage",
+  async ({ id, imageFile }, { rejectWithValue }) => {
     try {
-      const { auth } = getState();
-      const userId = auth.user.userId;
-
-      // Eğer avatar dosyası varsa, önce onu yükle
-      if (profileData.get("avatar")) {
-        await profileAPI.uploadProfileImage(
-          userId,
-          profileData.get("avatar"),
-          "Psychologist"
-        );
-        profileData.delete("avatar"); // FormData'dan dosyayı kaldır
-      }
-
-      const response = await profileAPI.updatePsychologistProfile(
-        userId,
-        profileData
+      const response = await patientProfileAPI.uploadProfileImage(
+        id,
+        imageFile
       );
 
       if (!response.success) {
-        return rejectWithValue(response.message || "Profil güncellenemedi");
-      }
-
-      // Eğer psikolog bir kuruma bağlıysa, kurum bilgilerini de al
-      let institutionData = null;
-      if (response.data.institutionId) {
-        const institutionResponse = await profileAPI.getPsychologistInstitution(
-          userId
-        );
-        if (institutionResponse.success) {
-          institutionData = institutionResponse.data;
-        }
-      }
-
-      return {
-        profile: response.data,
-        institution: institutionData,
-      };
-    } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Profil güncellenemedi"
-      );
-    }
-  }
-);
-
-// Kurum profili güncelleme
-export const updateInstitutionProfile = createAsyncThunk(
-  "profile/updateInstitutionProfile",
-  async (profileData, { rejectWithValue, getState }) => {
-    try {
-      const { auth } = getState();
-      const userId = auth.user.userId;
-
-      // Eğer avatar dosyası varsa, önce onu yükle
-      if (profileData.get("avatar")) {
-        await profileAPI.uploadProfileImage(
-          userId,
-          profileData.get("avatar"),
-          "Institution"
-        );
-        profileData.delete("avatar");
-      }
-
-      const response = await profileAPI.updateInstitutionProfile(
-        userId,
-        profileData
-      );
-
-      if (!response.success) {
-        return rejectWithValue(response.message || "Profil güncellenemedi");
+        return rejectWithValue(response.message || "Profil resmi yüklenemedi");
       }
 
       return response.data;
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || "Profil güncellenemedi"
+        error.response?.data?.message || "Profil resmi yüklenemedi"
+      );
+    }
+  }
+);
+
+export const GetPatientsByPsychologist = createAsyncThunk(
+  "profile/GetPatientsByPsychologist",
+  async (psychologistId, { rejectWithValue }) => {
+    try {
+      const response = await patientProfileAPI.getPatientsByPsychologist(
+        psychologistId
+      );
+
+      if (!response.success) {
+        return rejectWithValue(response.message || "Hasta listesi alınamadı");
+      }
+
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Hasta listesi alınamadı"
+      );
+    }
+  }
+);
+
+export const GetPatientsByInstitution = createAsyncThunk(
+  "profile/GetPatientsByInstitution",
+  async (institutionId, { rejectWithValue }) => {
+    try {
+      const response = await patientProfileAPI.getPatientsByInstitution(
+        institutionId
+      );
+
+      if (!response.success) {
+        return rejectWithValue(response.message || "Hasta listesi alınamadı");
+      }
+
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Hasta listesi alınamadı"
       );
     }
   }
@@ -205,7 +151,7 @@ export const updateInstitutionProfile = createAsyncThunk(
 
 const initialState = {
   profile: null,
-  institution: null, // Psikolog için bağlı olduğu kurum bilgisi
+  patients: [],
   loading: false,
   error: null,
   success: false,
@@ -224,101 +170,94 @@ const profileSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // Hasta profili getirme
-      .addCase(fetchPatientProfile.pending, (state) => {
+      // GetCurrentPatientProfile
+      .addCase(GetCurrentPatientProfile.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(fetchPatientProfile.fulfilled, (state, action) => {
+      .addCase(GetCurrentPatientProfile.fulfilled, (state, action) => {
         state.loading = false;
         state.profile = action.payload;
-        state.institution = null;
       })
-      .addCase(fetchPatientProfile.rejected, (state, action) => {
+      .addCase(GetCurrentPatientProfile.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
 
-      // Psikolog profili getirme
-      .addCase(fetchPsychologistProfile.pending, (state) => {
+      // GetPatientProfile
+      .addCase(GetPatientProfile.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(fetchPsychologistProfile.fulfilled, (state, action) => {
-        state.loading = false;
-        state.profile = action.payload.profile;
-        state.institution = action.payload.institution;
-      })
-      .addCase(fetchPsychologistProfile.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
-      })
-
-      // Kurum profili getirme
-      .addCase(fetchInstitutionProfile.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(fetchInstitutionProfile.fulfilled, (state, action) => {
+      .addCase(GetPatientProfile.fulfilled, (state, action) => {
         state.loading = false;
         state.profile = action.payload;
-        state.institution = null;
       })
-      .addCase(fetchInstitutionProfile.rejected, (state, action) => {
+      .addCase(GetPatientProfile.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
 
-      // Hasta profili güncelleme
-      .addCase(updatePatientProfile.pending, (state) => {
+      // UpdatePatientProfile
+      .addCase(UpdatePatientProfile.pending, (state) => {
         state.loading = true;
         state.error = null;
         state.success = false;
       })
-      .addCase(updatePatientProfile.fulfilled, (state, action) => {
+      .addCase(UpdatePatientProfile.fulfilled, (state, action) => {
         state.loading = false;
         state.profile = action.payload;
         state.success = true;
       })
-      .addCase(updatePatientProfile.rejected, (state, action) => {
+      .addCase(UpdatePatientProfile.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
         state.success = false;
       })
 
-      // Psikolog profili güncelleme
-      .addCase(updatePsychologistProfile.pending, (state) => {
+      // UploadProfileImage
+      .addCase(UploadProfileImage.pending, (state) => {
         state.loading = true;
         state.error = null;
         state.success = false;
       })
-      .addCase(updatePsychologistProfile.fulfilled, (state, action) => {
+      .addCase(UploadProfileImage.fulfilled, (state, action) => {
         state.loading = false;
-        state.profile = action.payload.profile;
-        state.institution = action.payload.institution;
+        state.profile = action.payload; // Güncel profil bilgisini al
         state.success = true;
       })
-      .addCase(updatePsychologistProfile.rejected, (state, action) => {
+      .addCase(UploadProfileImage.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
         state.success = false;
       })
 
-      // Kurum profili güncelleme
-      .addCase(updateInstitutionProfile.pending, (state) => {
+      // GetPatientsByPsychologist
+      .addCase(GetPatientsByPsychologist.pending, (state) => {
         state.loading = true;
         state.error = null;
-        state.success = false;
       })
-      .addCase(updateInstitutionProfile.fulfilled, (state, action) => {
+      .addCase(GetPatientsByPsychologist.fulfilled, (state, action) => {
         state.loading = false;
-        state.profile = action.payload;
-        state.success = true;
+        state.patients = action.payload;
       })
-      .addCase(updateInstitutionProfile.rejected, (state, action) => {
+      .addCase(GetPatientsByPsychologist.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
-        state.success = false;
+      })
+
+      // GetPatientsByInstitution
+      .addCase(GetPatientsByInstitution.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(GetPatientsByInstitution.fulfilled, (state, action) => {
+        state.loading = false;
+        state.patients = action.payload;
+      })
+      .addCase(GetPatientsByInstitution.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       });
   },
 });

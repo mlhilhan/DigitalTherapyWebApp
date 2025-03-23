@@ -11,7 +11,6 @@ import {
   ListItemIcon,
   ListItemText,
   Divider,
-  Container,
   Avatar,
   Menu,
   MenuItem,
@@ -24,6 +23,8 @@ import {
   Paper,
   InputBase,
   alpha,
+  Backdrop,
+  Container,
 } from "@mui/material";
 import {
   Menu as MenuIcon,
@@ -56,7 +57,7 @@ import { useTranslation } from "react-i18next";
 
 const Layout = ({ children }) => {
   const { isMobile, isTablet } = useResponsive();
-  const [drawerOpen, setDrawerOpen] = useState(!isMobile);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
   const [notificationAnchorEl, setNotificationAnchorEl] = useState(null);
   const [searchFocused, setSearchFocused] = useState(false);
@@ -265,6 +266,16 @@ const Layout = ({ children }) => {
 
   return (
     <Box sx={{ display: "flex" }}>
+      <Backdrop
+        sx={{
+          color: "#fff",
+          zIndex: (theme) => theme.zIndex.drawer - 1,
+          backgroundColor: "rgba(0, 0, 0, 0.5)",
+        }}
+        open={drawerOpen}
+        onClick={handleDrawerToggle}
+      />
+
       <AppBar
         position="fixed"
         elevation={0}
@@ -625,7 +636,7 @@ const Layout = ({ children }) => {
       </AppBar>
 
       <Drawer
-        variant={isSmallScreen ? "temporary" : "persistent"}
+        variant="temporary"
         open={drawerOpen}
         onClose={handleDrawerToggle}
         ModalProps={{ keepMounted: true }}
@@ -667,11 +678,9 @@ const Layout = ({ children }) => {
               {t("digitalTherapy")}
             </Typography>
 
-            {!isSmallScreen && drawerOpen && (
-              <IconButton onClick={handleDrawerToggle}>
-                <MenuOpen />
-              </IconButton>
-            )}
+            <IconButton onClick={handleDrawerToggle}>
+              <ChevronLeft />
+            </IconButton>
           </Box>
 
           <Box
@@ -704,9 +713,7 @@ const Layout = ({ children }) => {
                   <ListItemButton
                     onClick={() => {
                       navigate(item.path);
-                      if (isSmallScreen) {
-                        setDrawerOpen(false);
-                      }
+                      setDrawerOpen(false);
                     }}
                     selected={isSelected}
                     sx={{
@@ -768,32 +775,30 @@ const Layout = ({ children }) => {
         component="main"
         sx={{
           flexGrow: 1,
-          width: {
-            xs: "100%",
-            sm: `calc(100% - ${drawerOpen ? drawerWidth : 0}px)`,
-          },
-          ml: {
-            xs: 0,
-            sm: drawerOpen ? `${drawerWidth}px` : 0,
-          },
-          pt: "64px", // AppBar height
+          width: "100%",
+          pt: "64px",
           transition: theme.transitions.create(["margin", "width"], {
             easing: theme.transitions.easing.easeOut,
             duration: theme.transitions.duration.enteringScreen,
           }),
           backgroundColor: "#f5f7fa",
           minHeight: "100vh",
+          display: "flex",
+          flexDirection: "column",
         }}
       >
-        <Container
-          maxWidth="lg"
+        <Box
           sx={{
-            py: 3,
+            flexGrow: 1,
+            width: "100%",
             height: "100%",
+            display: "flex",
+            flexDirection: "column",
+            p: { xs: 2, sm: 3 },
           }}
         >
           {children}
-        </Container>
+        </Box>
       </Box>
     </Box>
   );

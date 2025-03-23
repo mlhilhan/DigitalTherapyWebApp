@@ -45,6 +45,9 @@ import {
   UpdatePatientProfile,
   UploadProfileImage,
 } from "../../features/profile/profileSlice";
+import LoadingComponent, {
+  LOADING_TYPES,
+} from "../../components/common/LoadingComponent";
 import { toast } from "react-toastify";
 
 function TabPanel({ children, value, index, ...other }) {
@@ -214,50 +217,8 @@ const PatientProfile = () => {
     },
   ];
 
-  // Loading state
   if (loading && !profile) {
-    return (
-      <Container maxWidth="md" sx={{ mt: 4 }}>
-        <Card
-          sx={{
-            borderRadius: 3,
-            overflow: "hidden",
-            boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
-          }}
-        >
-          <Skeleton variant="rectangular" height={200} />
-          <CardContent>
-            <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
-              <Skeleton
-                variant="circular"
-                width={80}
-                height={80}
-                sx={{ mr: 2 }}
-              />
-              <Box>
-                <Skeleton variant="text" width={180} height={40} />
-                <Skeleton variant="text" width={100} height={24} />
-              </Box>
-            </Box>
-            <Skeleton
-              variant="rectangular"
-              height={120}
-              sx={{ borderRadius: 2, mb: 3 }}
-            />
-            <Skeleton
-              variant="rectangular"
-              height={50}
-              sx={{ borderRadius: 2, mb: 2 }}
-            />
-            <Skeleton
-              variant="rectangular"
-              height={50}
-              sx={{ borderRadius: 2 }}
-            />
-          </CardContent>
-        </Card>
-      </Container>
-    );
+    return <LoadingComponent type={LOADING_TYPES.PROFILE} />;
   }
 
   return (

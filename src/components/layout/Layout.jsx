@@ -309,7 +309,8 @@ const Layout = ({ children }) => {
           </Box>
 
           <Box sx={{ display: "flex", alignItems: "center" }}>
-            <Paper
+            {/* SEARCH */}
+            {/* <Paper
               component="form"
               sx={{
                 p: "2px 4px",
@@ -342,7 +343,7 @@ const Layout = ({ children }) => {
                 onFocus={() => setSearchFocused(true)}
                 onBlur={() => setSearchFocused(false)}
               />
-            </Paper>
+            </Paper> */}
 
             <Tooltip title={t("notifications")}>
               <IconButton

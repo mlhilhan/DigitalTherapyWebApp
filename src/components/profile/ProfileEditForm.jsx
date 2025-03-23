@@ -334,28 +334,6 @@ const ProfileEditForm = ({
                 }}
               />
             </StyledBadge>
-
-            <Box
-              sx={{
-                mt: 1,
-                textAlign: "center",
-                maxWidth: 180,
-              }}
-            >
-              <Typography
-                variant="caption"
-                color="textSecondary"
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 0.5,
-                }}
-              >
-                <Info fontSize="inherit" />
-                {t("profilePhotoTip")}
-              </Typography>
-            </Box>
           </Box>
 
           <Box sx={{ flexGrow: 1, width: { xs: "100%", sm: "auto" } }}>
@@ -411,63 +389,6 @@ const ProfileEditForm = ({
             </Grid>
           ))}
         </Grid>
-      </Box>
-
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          mt: 4,
-        }}
-      >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          {isDirty && (
-            <Alert
-              icon={<Info fontSize="inherit" />}
-              severity="info"
-              sx={{
-                py: 0,
-                px: 1,
-                "& .MuiAlert-message": {
-                  p: "4px 0",
-                  fontSize: "0.875rem",
-                },
-              }}
-            >
-              {t("unsavedChanges")}
-            </Alert>
-          )}
-        </Box>
-
-        {/* <Box sx={{ display: "flex", gap: 2 }}>
-          <Button
-            variant="outlined"
-            onClick={() => reset(profile)}
-            disabled={!isDirty}
-          >
-            {t("reset")}
-          </Button>
-
-          <LoadingButton
-            type="submit"
-            variant="contained"
-            color="primary"
-            loading={loading}
-            disabled={!isDirty || !isValid}
-            loadingPosition="start"
-            startIcon={<Check />}
-            sx={{
-              minWidth: 120,
-              boxShadow: "0 4px 10px rgba(25, 118, 210, 0.3)",
-              "&:hover": {
-                boxShadow: "0 6px 10px rgba(25, 118, 210, 0.4)",
-              },
-            }}
-          >
-            {t("save")}
-          </LoadingButton>
-        </Box> */}
       </Box>
     </Box>
   );

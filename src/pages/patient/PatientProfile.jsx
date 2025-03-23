@@ -3,13 +3,10 @@ import {
   Container,
   Typography,
   Box,
-  Paper,
-  Divider,
   Tabs,
   Tab,
   Button,
   Avatar,
-  Skeleton,
   Alert,
   Grid,
   Card,
@@ -207,11 +204,12 @@ const PatientProfile = () => {
     {
       name: "phoneNumber",
       label: t("phoneNumber"),
+      placeHolder: "+901234567890",
       type: "text",
       rules: {
         pattern: {
-          value: /^(\+90|0)?[0-9]{10}$/,
-          message: t("invalidPhoneFormat"),
+          value: /^\+\d{1,14}$/,
+          message: t("pleasePhoneNumberEnterAreaCode"),
         },
       },
     },
@@ -293,11 +291,7 @@ const PatientProfile = () => {
             >
               {t("cancel")}
             </Button>
-            <Button
-              variant="contained"
-              type="submit"
-              form="profile-edit-form" // This should match the form id in ProfileEditForm
-            >
+            <Button variant="contained" type="submit" form="profile-edit-form">
               {t("save")}
             </Button>
           </Box>
@@ -657,7 +651,6 @@ const PatientProfile = () => {
   );
 };
 
-// Helper component for info items
 const InfoItem = ({ icon, label, value }) => {
   return (
     <Box

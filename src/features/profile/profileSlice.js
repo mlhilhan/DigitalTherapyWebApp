@@ -162,12 +162,34 @@ export const GetPatientsByInstitution = createAsyncThunk(
   }
 );
 
+export const UpdateLanguagePreference = createAsyncThunk(
+  "profile/UpdateLanguagePreference",
+  async (language, { rejectWithValue, dispatch }) => {
+    try {
+      const response = await patientProfileAPI.updateProfileLanguage(language);
+      if (!response.success) {
+        return rejectWithValue(
+          response.message || "Dil tercihi güncellenemedi"
+        );
+      }
+      i18n.changeLanguage(language);
+      await dispatch(GetCurrentPatientProfile());
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Dil tercihi güncellenemedi"
+      );
+    }
+  }
+);
+
 const initialState = {
   profile: null,
   patients: [],
   loading: false,
   error: null,
   success: false,
+  languageLoaded: false,
 };
 
 const profileSlice = createSlice({
@@ -180,6 +202,9 @@ const profileSlice = createSlice({
     resetProfileSuccess: (state) => {
       state.success = false;
     },
+    setLanguageLoaded: (state, action) => {
+      state.languageLoaded = action.payload;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -191,10 +216,12 @@ const profileSlice = createSlice({
       .addCase(GetCurrentPatientProfile.fulfilled, (state, action) => {
         state.loading = false;
         state.profile = action.payload;
+        state.languageLoaded = true;
       })
       .addCase(GetCurrentPatientProfile.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+        state.languageLoaded = true;
       })
 
       // GetPatientProfile
@@ -274,9 +301,24 @@ const profileSlice = createSlice({
       .addCase(GetPatientsByInstitution.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+
+      // UpdateLanguagePreference
+      .addCase(UpdateLanguagePreference.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(UpdateLanguagePreference.fulfilled, (state) => {
+        state.loading = false;
+        state.success = true;
+      })
+      .addCase(UpdateLanguagePreference.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       });
   },
 });
 
-export const { clearProfileError, resetProfileSuccess } = profileSlice.actions;
+export const { clearProfileError, resetProfileSuccess, setLanguageLoaded } =
+  profileSlice.actions;
 export default profileSlice.reducer;

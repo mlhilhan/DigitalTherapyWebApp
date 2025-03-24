@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import { BrowserRouter } from "react-router-dom";
@@ -5,9 +7,38 @@ import { Provider as ReduxProvider } from "react-redux";
 import theme from "./theme";
 import store from "./store";
 import AppRoutes from "./routes";
-import "./i18n/i18n";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import i18n from "./i18n/i18n";
+import { GetCurrentPatientProfile } from "./features/profile/profileSlice";
+
+function AppContent() {
+  const dispatch = useDispatch();
+  const { isAuthenticated } = useSelector((state) => state.auth);
+  const { profile } = useSelector((state) => state.profile);
+
+  useEffect(() => {
+    const initLanguage = async () => {
+      if (isAuthenticated && profile?.preferredLanguage) {
+        await i18n.changeLanguage(profile.preferredLanguage);
+      }
+    };
+    initLanguage();
+  }, [isAuthenticated, profile?.preferredLanguage]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      dispatch(GetCurrentPatientProfile());
+    }
+  }, [isAuthenticated, dispatch]);
+
+  return (
+    <>
+      <AppRoutes />
+      <ToastContainer />
+    </>
+  );
+}
 
 function App() {
   return (
@@ -15,19 +46,7 @@ function App() {
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <BrowserRouter>
-          <AppRoutes />
-
-          <ToastContainer
-            position="top-right"
-            autoClose={3000}
-            hideProgressBar={false}
-            newestOnTop
-            closeOnClick
-            rtl={false}
-            pauseOnFocusLoss
-            draggable
-            pauseOnHover
-          />
+          <AppContent />
         </BrowserRouter>
       </ThemeProvider>
     </ReduxProvider>

@@ -84,10 +84,19 @@ const PatientProfile = () => {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
   const { profile, loading, error } = useSelector((state) => state.profile);
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const fileInputRef = React.useRef(null);
+
+  let appLanguages = [
+    { value: "tr", label: "Türkçe" },
+    { value: "en", label: "English" },
+    { value: "ar", label: "عربية" },
+    { value: "es", label: "Español" },
+    { value: "ru", label: "русский язык" },
+    { value: "zh", label: "中文" },
+  ];
 
   useEffect(() => {
     if (user?.userId) {
@@ -103,20 +112,39 @@ const PatientProfile = () => {
     setIsEditing(!isEditing);
   };
 
-  const handleProfileUpdate = (formData) => {
-    dispatch(UpdatePatientProfile(formData))
-      .unwrap()
-      .then(() => {
-        setIsEditing(false);
-        toast.success(t("profileUpdatedSuccessfully"));
-      })
-      .catch((error) => {
-        if (error.statusCode === 200) {
-          toast.error(error.message);
-        } else {
-          toast.error(t("profileupdatedFailed"));
-        }
-      });
+  // const handleProfileUpdate = (formData) => {
+  //   dispatch(UpdatePatientProfile(formData))
+  //     .unwrap()
+  //     .then(() => {
+  //       setIsEditing(false);
+  //       const preferredLanguage = formData.get("preferredLanguage");
+  //       i18n.changeLanguage(preferredLanguage);
+  //       toast.success(t("profileUpdatedSuccessfully"));
+  //     })
+  //     .catch((error) => {
+  //       if (error.statusCode === 200) {
+  //         toast.error(error.message);
+  //       } else {
+  //         toast.error(t("profileupdatedFailed"));
+  //       }
+  //     });
+  // };
+  const handleProfileUpdate = async (formData) => {
+    try {
+      const currentLanguage = i18n.language;
+      const preferredLanguage = formData.get("preferredLanguage");
+
+      await dispatch(UpdatePatientProfile(formData)).unwrap();
+
+      if (preferredLanguage && preferredLanguage !== currentLanguage) {
+        await i18n.changeLanguage(preferredLanguage);
+      }
+
+      toast.success(t("profileUpdatedSuccessfully"));
+      setIsEditing(false);
+    } catch (error) {
+      toast.error(error.response?.data?.message || t("profileupdatedFailed"));
+    }
   };
 
   const handleImageClick = () => {
@@ -184,10 +212,7 @@ const PatientProfile = () => {
       name: "preferredLanguage",
       label: t("preferredLanguage"),
       type: "select",
-      options: [
-        { value: "tr", label: "Türkçe" },
-        { value: "en", label: "English" },
-      ],
+      options: appLanguages,
     },
     {
       name: "email",
@@ -495,7 +520,11 @@ const PatientProfile = () => {
                     <InfoItem
                       icon={<Person color="primary" />}
                       label={t("fullName")}
-                      value={`${profile?.firstName} ${profile?.lastName}`}
+                      value={
+                        profile?.firstName && profile?.lastName
+                          ? `${profile.firstName} ${profile.lastName}`
+                          : "-"
+                      }
                     />
                   </Grid>
 
@@ -548,10 +577,10 @@ const PatientProfile = () => {
                       icon={<Translate color="primary" />}
                       label={t("preferredLanguage")}
                       value={
-                        profile?.preferredLanguage === "tr"
-                          ? "Türkçe"
-                          : profile?.preferredLanguage === "en"
-                          ? "English"
+                        profile?.preferredLanguage
+                          ? appLanguages.find(
+                              (lang) => lang.value === profile.preferredLanguage
+                            )?.label
                           : "-"
                       }
                     />

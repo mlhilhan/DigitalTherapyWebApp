@@ -22,9 +22,10 @@ const RegisterPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const dispatch = useDispatch();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { isLoading, error } = useSelector((state) => state.auth);
+  const userLanguage = i18n.language.split("-")[0]; // "en-EN" -> "en"
 
   const {
     control,
@@ -38,11 +39,14 @@ const RegisterPage = () => {
       password: "",
       confirmPassword: "",
       roleId: "4b41d3bc-95cb-4758-8c01-c5487707931e", //patient
+      preferredLanguage: userLanguage,
     },
   });
 
   const onSubmit = async (data) => {
     try {
+      debugger;
+      console.log("Browser Dili: " + i18n.language);
       const { confirmPassword, ...registerData } = data;
 
       const resultAction = await dispatch(registerUser(registerData));

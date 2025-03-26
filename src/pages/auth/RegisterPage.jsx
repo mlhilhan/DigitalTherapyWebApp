@@ -45,7 +45,6 @@ const RegisterPage = () => {
 
   const onSubmit = async (data) => {
     try {
-      debugger;
       console.log("Browser Dili: " + i18n.language);
       const { confirmPassword, ...registerData } = data;
 

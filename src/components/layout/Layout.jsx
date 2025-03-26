@@ -176,7 +176,7 @@ const Layout = ({ children }) => {
           {
             text: t("profile"),
             icon: <Person />,
-            path: `/psychologist/profile`,
+            path: `${dashboardPrefix}/profile`,
           },
         ];
         break;
@@ -212,7 +212,7 @@ const Layout = ({ children }) => {
           {
             text: t("profile"),
             icon: <Business />,
-            path: `/institution/profile`,
+            path: `${dashboardPrefix}/profile`,
           },
         ];
         break;
@@ -243,7 +243,7 @@ const Layout = ({ children }) => {
           {
             text: t("profile"),
             icon: <Person />,
-            path: `/admin/profile`,
+            path: `${dashboardPrefix}/profile`,
           },
         ];
         break;
@@ -459,11 +459,11 @@ const Layout = ({ children }) => {
                 if (user?.role?.roleId === ROLE_IDS.PATIENT) {
                   navigate("/patient-dashboard/profile");
                 } else if (user?.role?.roleId === ROLE_IDS.PSYCHOLOGIST) {
-                  navigate("/psychologist/profile");
+                  navigate("/psychologist-dashboard/profile");
                 } else if (user?.role?.roleId === ROLE_IDS.INSTITUTION) {
-                  navigate("/institution/profile");
+                  navigate("/institution-dashboard/profile");
                 } else if (user?.role?.roleId === ROLE_IDS.ADMIN) {
-                  navigate("/admin/profile");
+                  navigate("/admin-dashboard/profile");
                 } else {
                   navigate("/profile");
                 }

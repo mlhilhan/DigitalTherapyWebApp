@@ -47,6 +47,7 @@ import LoadingComponent, {
 } from "../../components/common/LoadingComponent";
 import { toast } from "react-toastify";
 import appLanguages from "../../config/appLanguages";
+import NotificationPreferences from "../../components/profile/NotificationPreferences";
 
 function TabPanel({ children, value, index, ...other }) {
   return (
@@ -79,10 +80,11 @@ function TabPanel({ children, value, index, ...other }) {
 }
 
 const PatientProfile = () => {
+  const dispatch = useDispatch();
   const [tabValue, setTabValue] = useState(0);
   const [isEditing, setIsEditing] = useState(false);
   const [imageHover, setImageHover] = useState(false);
-  const dispatch = useDispatch();
+  const [notificationModalOpen, setNotificationModalOpen] = useState(false);
   const { user } = useSelector((state) => state.auth);
   const { profile, loading, error } = useSelector((state) => state.profile);
   const { t, i18n } = useTranslation();
@@ -96,6 +98,14 @@ const PatientProfile = () => {
     }
   }, [dispatch, user]);
 
+  const handleNotificationModalOpen = () => {
+    setNotificationModalOpen(true);
+  };
+
+  const handleNotificationModalClose = () => {
+    setNotificationModalOpen(false);
+  };
+
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
   };
@@ -104,23 +114,6 @@ const PatientProfile = () => {
     setIsEditing(!isEditing);
   };
 
-  // const handleProfileUpdate = (formData) => {
-  //   dispatch(UpdatePatientProfile(formData))
-  //     .unwrap()
-  //     .then(() => {
-  //       setIsEditing(false);
-  //       const preferredLanguage = formData.get("preferredLanguage");
-  //       i18n.changeLanguage(preferredLanguage);
-  //       toast.success(t("profileUpdatedSuccessfully"));
-  //     })
-  //     .catch((error) => {
-  //       if (error.statusCode === 200) {
-  //         toast.error(error.message);
-  //       } else {
-  //         toast.error(t("profileupdatedFailed"));
-  //       }
-  //     });
-  // };
   const handleProfileUpdate = async (formData) => {
     try {
       const currentLanguage = i18n.language;
@@ -583,24 +576,8 @@ const PatientProfile = () => {
 
             <TabPanel value={tabValue} index={1}>
               <Box sx={{ height: "100%" }}>
-                <Typography
-                  variant="h6"
-                  sx={{
-                    mb: 3,
-                    fontWeight: 600,
-                    display: "flex",
-                    alignItems: "center",
-                  }}
-                >
-                  <Settings
-                    sx={{ mr: 1, color: "primary.main" }}
-                    fontSize="small"
-                  />
-                  {t("accountSettings")}
-                </Typography>
-
                 <Grid container spacing={3}>
-                  <Grid item xs={12}>
+                  {/* <Grid item xs={12}>
                     <Card
                       variant="outlined"
                       sx={{
@@ -624,6 +601,46 @@ const PatientProfile = () => {
                         </Box>
                       </Box>
                       <Button variant="outlined" size="small">
+                        {t("manage")}
+                      </Button>
+                    </Card>
+                  </Grid> */}
+
+                  <Grid item xs={12}>
+                    <Card
+                      variant="outlined"
+                      sx={{
+                        borderRadius: 2,
+                        p: 2,
+                        boxShadow: "none",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        transition: "all 0.2s ease",
+                        "&:hover": {
+                          boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+                          borderColor: "primary.light",
+                        },
+                      }}
+                    >
+                      <Box sx={{ display: "flex", alignItems: "center" }}>
+                        <NotificationsActive color="primary" sx={{ mr: 2 }} />
+                        <Box>
+                          <Typography variant="subtitle1" fontWeight={600}>
+                            {t("notificationPreferences")}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            {profile?.notificationPreferences
+                              ? t("notificationPreferencesConfigured")
+                              : t("notificationPreferencesNotConfigured")}
+                          </Typography>
+                        </Box>
+                      </Box>
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        onClick={handleNotificationModalOpen}
+                      >
                         {t("manage")}
                       </Button>
                     </Card>
@@ -667,6 +684,10 @@ const PatientProfile = () => {
             </TabPanel>
           </Card>
         </>
+      )}
+
+      {notificationModalOpen && (
+        <NotificationPreferences onClose={handleNotificationModalClose} />
       )}
     </Container>
   );

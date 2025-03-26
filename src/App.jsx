@@ -26,11 +26,11 @@ function AppContent() {
     initLanguage();
   }, [isAuthenticated, profile?.preferredLanguage]);
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      dispatch(GetCurrentPatientProfile());
-    }
-  }, [isAuthenticated, dispatch]);
+  // useEffect(() => {
+  //   if (isAuthenticated) {
+  //     dispatch(GetCurrentPatientProfile());
+  //   }
+  // }, [isAuthenticated, dispatch]);
 
   return (
     <>

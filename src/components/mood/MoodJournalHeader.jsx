@@ -24,6 +24,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
 import trLocale from "date-fns/locale/tr";
+import { useSelector, useDispatch } from "react-redux";
 
 const MoodJournalHeader = ({
   viewMode,
@@ -37,6 +38,8 @@ const MoodJournalHeader = ({
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const [openFilterMenu, setOpenFilterMenu] = useState(null);
+
+  const { loading } = useSelector((state) => state.emotionalState);
 
   const handleViewModeChange = (event, newMode) => {
     if (newMode) onViewModeChange(newMode);
@@ -164,6 +167,7 @@ const MoodJournalHeader = ({
               startIcon={<Add />}
               onClick={onAddNew}
               size={isMobile ? "small" : "medium"}
+              disabled={loading}
             >
               {t("newEntry")}
             </Button>

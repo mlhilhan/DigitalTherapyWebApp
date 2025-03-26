@@ -6,7 +6,14 @@ import {
   SentimentDissatisfied,
   SentimentVeryDissatisfied,
 } from "@mui/icons-material";
-import { format, isToday, isYesterday } from "date-fns";
+import {
+  format,
+  isToday,
+  isYesterday,
+  isThisWeek,
+  isThisMonth,
+  isSameDay,
+} from "date-fns";
 import trLocale from "date-fns/locale/tr";
 
 export const MOOD_LEVELS = {
@@ -82,11 +89,13 @@ export const getFilteredEntries = (entries, filterMode, filterDate) => {
   if (filterMode === "today") {
     filtered = filtered.filter((entry) => isToday(new Date(entry.date)));
   } else if (filterMode === "week") {
-    filtered = filtered.filter((entry) => isThisWeek(new Date(entry.date)));
+    filtered = filtered.filter((entry) =>
+      isThisWeek(new Date(entry.date), { weekStartsOn: 1 })
+    );
   } else if (filterMode === "month") {
     filtered = filtered.filter((entry) => isThisMonth(new Date(entry.date)));
   } else if (filterMode === "bookmarked") {
-    filtered = filtered.filter((entry) => entry.bookmarked);
+    filtered = filtered.filter((entry) => entry.isBookmarked);
   } else if (filterDate) {
     filtered = filtered.filter((entry) =>
       isSameDay(new Date(entry.date), filterDate)
@@ -94,21 +103,4 @@ export const getFilteredEntries = (entries, filterMode, filterDate) => {
   }
 
   return filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
-};
-
-// Dummy veri
-export const generateDummyEntries = () => {
-  const today = new Date();
-
-  return [
-    {
-      id: 1,
-      mood: 5,
-      factors: ["health", "leisure"],
-      notes:
-        "Bugün çok güzel bir gün geçirdim. Sabah erken kalkıp spor yaptım ve kendimi enerjik hissettim.",
-      date: today.toISOString(),
-      bookmarked: true,
-    },
-  ];
 };

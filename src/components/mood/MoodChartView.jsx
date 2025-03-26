@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Card, Typography, Box, Button } from "@mui/material";
 import { Add } from "@mui/icons-material";
 import { useTranslation } from "react-i18next";
@@ -12,27 +12,63 @@ import {
   Tooltip as RechartsTooltip,
   ResponsiveContainer,
 } from "recharts";
+import { useSelector } from "react-redux";
 
 const MoodChartView = ({ entries, onAddNew, getMoodLabel, theme }) => {
   const { t } = useTranslation();
+  const { statistics } = useSelector((state) => state.emotionalState);
 
-  // Grafik verisi oluştur
-  const getChartData = () => {
+  const chartData = useMemo(() => {
     if (!entries || entries.length === 0) return [];
 
-    // Son bir ayın verilerini al
     const lastMonthEntries = entries
       .filter((entry) => new Date(entry.date) >= subMonths(new Date(), 1))
       .sort((a, b) => new Date(a.date) - new Date(b.date));
 
     return lastMonthEntries.map((entry) => ({
       date: format(new Date(entry.date), "MM.dd"),
-      mood: entry.mood,
+      mood: entry.moodLevel,
       notes: entry.notes,
     }));
-  };
+  }, [entries]);
 
-  const chartData = getChartData();
+  const renderStatistics = () => {
+    if (!statistics) return null;
+
+    return (
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="h6" gutterBottom>
+          {t("moodStatistics")}
+        </Typography>
+        <Typography variant="body2">
+          {t("averageMood")}: {statistics.averageMood.toFixed(1)}
+        </Typography>
+        <Typography variant="body2">
+          {t("totalEntries")}: {statistics.totalEntries}
+        </Typography>
+
+        {/* En sık kullanılan faktörler */}
+        {statistics.factorFrequency &&
+          Object.keys(statistics.factorFrequency).length > 0 && (
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="subtitle2" gutterBottom>
+                {t("mostCommonFactors")}:
+              </Typography>
+              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
+                {Object.entries(statistics.factorFrequency)
+                  .sort((a, b) => b[1] - a[1])
+                  .slice(0, 3)
+                  .map(([factor, count]) => (
+                    <Typography key={factor} variant="body2">
+                      {t(factor)}: {count}
+                    </Typography>
+                  ))}
+              </Box>
+            </Box>
+          )}
+      </Box>
+    );
+  };
 
   return (
     <Card sx={{ p: 3, borderRadius: 2 }}>
@@ -42,6 +78,8 @@ const MoodChartView = ({ entries, onAddNew, getMoodLabel, theme }) => {
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         {t("lastMonthMoodChanges")}
       </Typography>
+
+      {renderStatistics()}
 
       <Box sx={{ width: "100%", height: 300 }}>
         {chartData.length > 0 ? (

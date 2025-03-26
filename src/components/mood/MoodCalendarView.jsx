@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Card, Typography, Grid, Paper, Avatar, Box } from "@mui/material";
 import { Add } from "@mui/icons-material";
 import { useTranslation } from "react-i18next";
@@ -11,6 +11,7 @@ import {
   isSameDay,
 } from "date-fns";
 import trLocale from "date-fns/locale/tr";
+import { useSelector } from "react-redux";
 
 const MoodCalendarView = ({
   entries,
@@ -21,7 +22,7 @@ const MoodCalendarView = ({
   const { t } = useTranslation();
 
   // Takvim verileri
-  const getCalendarData = () => {
+  const calendarData = useMemo(() => {
     // Bu haftanın günleri
     const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
     const weekEnd = endOfWeek(new Date(), { weekStartsOn: 1 });
@@ -37,7 +38,7 @@ const MoodCalendarView = ({
       let averageMood = 0;
       if (dayEntries.length > 0) {
         averageMood =
-          dayEntries.reduce((sum, entry) => sum + entry.mood, 0) /
+          dayEntries.reduce((sum, entry) => sum + entry.moodLevel, 0) /
           dayEntries.length;
       }
 
@@ -47,9 +48,7 @@ const MoodCalendarView = ({
         averageMood: Math.round(averageMood),
       };
     });
-  };
-
-  const calendarData = getCalendarData();
+  }, [entries]);
 
   return (
     <Card sx={{ p: 3, borderRadius: 2 }}>

@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Box, useTheme } from "@mui/material";
+import { Box, useTheme, Typography, Button, Card } from "@mui/material";
 import { useTranslation } from "react-i18next";
+import { useDispatch, useSelector } from "react-redux";
+import { Add } from "@mui/icons-material";
 import LoadingComponent, {
   LOADING_TYPES,
 } from "../../components/common/LoadingComponent";
@@ -16,31 +18,34 @@ import {
   getMoodIcon,
   formatEntryDate,
   getFilteredEntries,
-  generateDummyEntries,
 } from "../../components/mood/utils/moodUtil";
 import { Grid } from "@mui/material";
+import {
+  GetAllEmotionalStates,
+  CreateEmotionalState,
+  UpdateEmotionalState,
+  DeleteEmotionalState,
+  ToggleBookmarkEmotionalState,
+  setViewMode,
+  setFilterMode,
+  setFilterDate,
+} from "../../features/emotionalState/emotionalStateSlice";
 
 const MoodJournal = () => {
-  const [viewMode, setViewMode] = useState("journal");
-  const [entries, setEntries] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [filterMode, setFilterMode] = useState("all");
-  const [filterDate, setFilterDate] = useState(null);
+  const dispatch = useDispatch();
+  const { entries, loading, error, viewMode, filterMode, filterDate } =
+    useSelector((state) => state.emotionalState);
+
   const [openEntryDialog, setOpenEntryDialog] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
 
   const { t } = useTranslation();
   const theme = useTheme();
 
-  // dummy data
+  // Fetch all entries when component mounts
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setEntries(generateDummyEntries());
-      setLoading(false);
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, []);
+    dispatch(GetAllEmotionalStates());
+  }, [dispatch]);
 
   const getMoodLabel = useCallback(
     (moodLevel) => {
@@ -60,56 +65,45 @@ const MoodJournal = () => {
   );
 
   const handleFilterChange = (newFilter) => {
-    setFilterMode(newFilter);
-    if (newFilter !== "custom") {
-      setFilterDate(null);
-    }
+    dispatch(setFilterMode(newFilter));
   };
 
   const handleSelectDate = (date) => {
-    setFilterDate(date);
-    setFilterMode("custom");
-    setViewMode("journal");
+    dispatch(setFilterDate(date));
+    dispatch(setViewMode("journal"));
   };
 
   const handleAddEntry = (formData) => {
-    const newEntry = {
-      id: entries.length > 0 ? Math.max(...entries.map((e) => e.id)) + 1 : 1,
-      ...formData,
-      bookmarked: false,
-    };
-    setEntries([newEntry, ...entries]);
+    dispatch(CreateEmotionalState(formData));
     setOpenEntryDialog(false);
   };
 
   const handleUpdateEntry = (formData, id) => {
-    const updatedEntries = entries.map((entry) =>
-      entry.id === id ? { ...entry, ...formData } : entry
-    );
-    setEntries(updatedEntries);
+    dispatch(UpdateEmotionalState({ id, entryData: formData }));
     setEditingEntry(null);
   };
 
   const handleDeleteEntry = (id) => {
     if (window.confirm(t("confirmDeleteMoodEntry"))) {
-      setEntries(entries.filter((entry) => entry.id !== id));
+      dispatch(DeleteEmotionalState(id));
     }
   };
 
-  const handleBookmarkEntry = (id, isCurrentlyBookmarked) => {
-    const updatedEntries = entries.map((entry) =>
-      entry.id === id ? { ...entry, bookmarked: !isCurrentlyBookmarked } : entry
-    );
-    setEntries(updatedEntries);
+  const handleBookmarkEntry = (id) => {
+    dispatch(ToggleBookmarkEmotionalState(id));
   };
 
   const handleEdit = (entry) => {
     setEditingEntry(entry);
   };
 
+  const handleViewModeChange = (newMode) => {
+    dispatch(setViewMode(newMode));
+  };
+
   const filteredEntries = getFilteredEntries(entries, filterMode, filterDate);
 
-  if (loading) {
+  if (loading && entries.length === 0) {
     return <LoadingComponent type={LOADING_TYPES.CARD} count={3} />;
   }
 
@@ -126,7 +120,7 @@ const MoodJournal = () => {
         viewMode={viewMode}
         filterMode={filterMode}
         filterDate={filterDate}
-        onViewModeChange={setViewMode}
+        onViewModeChange={handleViewModeChange}
         onFilterChange={handleFilterChange}
         onAddNew={() => setOpenEntryDialog(true)}
       />

@@ -7,6 +7,7 @@ import {
   Avatar,
   IconButton,
   Chip,
+  Tooltip,
 } from "@mui/material";
 import { BookmarkBorder, Bookmark, Edit, Delete } from "@mui/icons-material";
 import { useTranslation } from "react-i18next";
@@ -43,22 +44,31 @@ const MoodEntryCard = ({
           gap: 0.5,
         }}
       >
-        <IconButton
-          size="small"
-          onClick={() => onBookmark(entry.id, entry.bookmarked)}
+        <Tooltip
+          title={entry.isBookmarked ? t("removeBookmark") : t("addBookmark")}
         >
-          {entry.bookmarked ? <Bookmark color="primary" /> : <BookmarkBorder />}
-        </IconButton>
-        <IconButton size="small" onClick={() => onEdit(entry)}>
-          <Edit />
-        </IconButton>
-        <IconButton
-          size="small"
-          onClick={() => onDelete(entry.id)}
-          color="error"
-        >
-          <Delete />
-        </IconButton>
+          <IconButton size="small" onClick={() => onBookmark(entry.id)}>
+            {entry.isBookmarked ? (
+              <Bookmark color="primary" />
+            ) : (
+              <BookmarkBorder />
+            )}
+          </IconButton>
+        </Tooltip>
+        <Tooltip title={t("edit")}>
+          <IconButton size="small" onClick={() => onEdit(entry)}>
+            <Edit />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title={t("delete")}>
+          <IconButton
+            size="small"
+            onClick={() => onDelete(entry.id)}
+            color="error"
+          >
+            <Delete />
+          </IconButton>
+        </Tooltip>
       </Box>
 
       <CardContent sx={{ flexGrow: 1, pb: 2 }}>
@@ -80,15 +90,17 @@ const MoodEntryCard = ({
           >
             <Avatar
               sx={{
-                bgcolor: getMoodColor(entry.mood),
+                bgcolor: getMoodColor(entry.moodLevel),
                 color: "white",
                 width: 40,
                 height: 40,
               }}
             >
-              {getMoodIcon(entry.mood)}
+              {getMoodIcon(entry.moodLevel)}
             </Avatar>
-            <Typography variant="h6">{getMoodLabel(entry.mood)}</Typography>
+            <Typography variant="h6">
+              {getMoodLabel(entry.moodLevel)}
+            </Typography>
           </Box>
         </Box>
 

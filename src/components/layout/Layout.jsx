@@ -54,6 +54,7 @@ import { useDispatch, useSelector } from "react-redux";
 import useResponsive from "../../hooks/useResponsive";
 import { logoutUser } from "../../features/auth/authSlice";
 import { useTranslation } from "react-i18next";
+import roles from "../../config/roles";
 
 const Layout = ({ children }) => {
   const { isMobile, isTablet } = useResponsive();
@@ -68,13 +69,6 @@ const Layout = ({ children }) => {
   const { t } = useTranslation();
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
-
-  const ROLE_IDS = {
-    PATIENT: "4b41d3bc-95cb-4758-8c01-c5487707931e",
-    PSYCHOLOGIST: "40c2b39a-a133-4ba9-a97b-ce351bd101ac",
-    ADMIN: "ce6c9f4d-8b26-4971-853a-69bafe48c012",
-    INSTITUTION: "5e6ef66e-8298-4002-b765-5a794f149362",
-  };
 
   useEffect(() => {
     if (isSmallScreen) {
@@ -118,7 +112,7 @@ const Layout = ({ children }) => {
 
   if (user && user.role) {
     switch (user.role.roleId) {
-      case ROLE_IDS.PATIENT:
+      case roles.PATIENT:
         roleText = t("patient");
         dashboardPrefix = "/patient-dashboard";
         menuItems = [
@@ -149,7 +143,7 @@ const Layout = ({ children }) => {
           },
         ];
         break;
-      case ROLE_IDS.PSYCHOLOGIST:
+      case roles.PSYCHOLOGIST:
         roleText = t("psychologist");
         dashboardPrefix = "/psychologist-dashboard";
         menuItems = [
@@ -180,7 +174,7 @@ const Layout = ({ children }) => {
           },
         ];
         break;
-      case ROLE_IDS.INSTITUTION:
+      case roles.INSTITUTION:
         roleText = t("institution");
         dashboardPrefix = "/institution-dashboard";
         menuItems = [
@@ -216,7 +210,7 @@ const Layout = ({ children }) => {
           },
         ];
         break;
-      case ROLE_IDS.ADMIN:
+      case roles.ADMIN:
         roleText = t("admin");
         dashboardPrefix = "/admin-dashboard";
         menuItems = [
@@ -456,13 +450,13 @@ const Layout = ({ children }) => {
             <MenuItem
               onClick={() => {
                 handleProfileMenuClose();
-                if (user?.role?.roleId === ROLE_IDS.PATIENT) {
+                if (user?.role?.roleId === roles.PATIENT) {
                   navigate("/patient-dashboard/profile");
-                } else if (user?.role?.roleId === ROLE_IDS.PSYCHOLOGIST) {
+                } else if (user?.role?.roleId === roles.PSYCHOLOGIST) {
                   navigate("/psychologist-dashboard/profile");
-                } else if (user?.role?.roleId === ROLE_IDS.INSTITUTION) {
+                } else if (user?.role?.roleId === roles.INSTITUTION) {
                   navigate("/institution-dashboard/profile");
-                } else if (user?.role?.roleId === ROLE_IDS.ADMIN) {
+                } else if (user?.role?.roleId === roles.ADMIN) {
                   navigate("/admin-dashboard/profile");
                 } else {
                   navigate("/profile");

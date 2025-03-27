@@ -11,10 +11,12 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import i18n from "./i18n/i18n";
 import { GetCurrentPatientProfile } from "./features/profile/profileSlice";
+import roles from "./config/roles";
 
 function AppContent() {
   const dispatch = useDispatch();
   const { isAuthenticated } = useSelector((state) => state.auth);
+  const { user } = useSelector((state) => state.auth);
   const { profile } = useSelector((state) => state.profile);
 
   useEffect(() => {
@@ -26,11 +28,22 @@ function AppContent() {
     initLanguage();
   }, [isAuthenticated, profile?.preferredLanguage]);
 
-  // useEffect(() => {
-  //   if (isAuthenticated) {
-  //     dispatch(GetCurrentPatientProfile());
-  //   }
-  // }, [isAuthenticated, dispatch]);
+  useEffect(() => {
+    if (isAuthenticated) {
+      switch (user?.role?.roleId) {
+        case roles.PATIENT:
+          dispatch(GetCurrentPatientProfile());
+          break;
+        case roles.PSYCHOLOGIST:
+          break;
+        case roles.INSTITUTION:
+          break;
+        case roles.ADMIN:
+          break;
+        default:
+      }
+    }
+  }, [isAuthenticated, dispatch]);
 
   return (
     <>

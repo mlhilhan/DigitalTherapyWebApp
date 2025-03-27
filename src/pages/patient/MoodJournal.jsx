@@ -41,13 +41,23 @@ const MoodJournal = () => {
   const [editingEntry, setEditingEntry] = useState(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [entryToDelete, setEntryToDelete] = useState(null);
-
+  const { profile } = useSelector((state) => state.profile);
+  const [patientFullName, setPatientFullName] = useState("");
   const { t } = useTranslation();
   const theme = useTheme();
 
   useEffect(() => {
     dispatch(GetAllEmotionalStates());
   }, [dispatch]);
+
+  useEffect(() => {
+    if (profile) {
+      const fullName = `${profile.firstName || ""} ${
+        profile?.lastName || ""
+      }`.trim();
+      setPatientFullName(fullName);
+    }
+  }, [profile]);
 
   const getMoodLabel = useCallback(
     (moodLevel) => {
@@ -164,7 +174,7 @@ const MoodJournal = () => {
         onViewModeChange={handleViewModeChange}
         onFilterChange={handleFilterChange}
         onAddNew={() => setOpenEntryDialog(true)}
-        patientName={null}
+        patientName={patientFullName}
       />
 
       <Box sx={{ flexGrow: 1, overflow: "auto" }}>

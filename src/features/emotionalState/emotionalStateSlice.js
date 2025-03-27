@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { emotionalStateAPI } from "../../api/emotionalState";
+import i18n from "../../i18n/i18n";
 
 export const GetAllEmotionalStates = createAsyncThunk(
   "emotionalState/GetAllEmotionalStates",
@@ -15,9 +16,12 @@ export const GetAllEmotionalStates = createAsyncThunk(
 
       return response.data;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch mood entries"
-      );
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        i18n.t("anUnexpectedErrorOccurred");
+
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -36,9 +40,12 @@ export const GetEmotionalStateById = createAsyncThunk(
 
       return response.data;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch mood entry"
-      );
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        i18n.t("anUnexpectedErrorOccurred");
+
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -60,10 +67,12 @@ export const GetEmotionalStatesByDateRange = createAsyncThunk(
 
       return response.data;
     } catch (error) {
-      return rejectWithValue(
+      const errorMessage =
         error.response?.data?.message ||
-          "Failed to fetch mood entries for date range"
-      );
+        error.message ||
+        i18n.t("anUnexpectedErrorOccurred");
+
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -82,9 +91,12 @@ export const GetBookmarkedEmotionalStates = createAsyncThunk(
 
       return response.data;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch bookmarked entries"
-      );
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        i18n.t("anUnexpectedErrorOccurred");
+
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -106,9 +118,12 @@ export const GetEmotionalStateStatistics = createAsyncThunk(
 
       return response.data;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch mood statistics"
-      );
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        i18n.t("anUnexpectedErrorOccurred");
+
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -129,9 +144,12 @@ export const CreateEmotionalState = createAsyncThunk(
 
       return response.data;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to create mood entry"
-      );
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        i18n.t("anUnexpectedErrorOccurred");
+
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -152,9 +170,12 @@ export const UpdateEmotionalState = createAsyncThunk(
 
       return response.data;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to update mood entry"
-      );
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        i18n.t("anUnexpectedErrorOccurred");
+
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -175,9 +196,12 @@ export const DeleteEmotionalState = createAsyncThunk(
 
       return id;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to delete mood entry"
-      );
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        i18n.t("anUnexpectedErrorOccurred");
+
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -196,9 +220,12 @@ export const ToggleBookmarkEmotionalState = createAsyncThunk(
 
       return response.data;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to toggle bookmark"
-      );
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        i18n.t("anUnexpectedErrorOccurred");
+
+      return rejectWithValue(errorMessage);
     }
   }
 );

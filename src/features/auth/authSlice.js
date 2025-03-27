@@ -28,9 +28,12 @@ export const loginUser = createAsyncThunk(
 
       return response;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || i18n.t("loginFailed")
-      );
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        i18n.t("anUnexpectedErrorOccurred");
+
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -56,9 +59,12 @@ export const registerUser = createAsyncThunk(
 
       return response;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || i18n.t("registerFailed")
-      );
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        i18n.t("registerFailed");
+
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -75,9 +81,12 @@ export const logoutUser = createAsyncThunk(
       localStorage.removeItem("accessToken");
       localStorage.removeItem("refreshToken");
 
-      return rejectWithValue(
-        error.response?.data?.message || i18n.t("logoutFailed")
-      );
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        i18n.t("logoutFailed");
+
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -96,9 +105,12 @@ export const forgotPassword = createAsyncThunk(
 
       return response;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || i18n.t("passwordResetFailed")
-      );
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        i18n.t("passwordResetFailed");
+
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -124,7 +136,12 @@ export const checkAuth = createAsyncThunk(
         refreshToken,
       };
     } catch (error) {
-      return rejectWithValue(error.message);
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        i18n.t("anUnexpectedErrorOccurred");
+
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -148,9 +165,12 @@ export const loadUserData = createAsyncThunk(
 
       return response.user;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || i18n.t("failedToLoadUserData")
-      );
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        i18n.t("failedToLoadUserData");
+
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -169,10 +189,12 @@ export const UpdateUserContact = createAsyncThunk(
 
       return response.data;
     } catch (error) {
-      return rejectWithValue(
+      const errorMessage =
         error.response?.data?.message ||
-          i18n.t("contactInformationCouldNotUpdated")
-      );
+        error.message ||
+        i18n.t("contactInformationCouldNotUpdated");
+
+      return rejectWithValue(errorMessage);
     }
   }
 );

@@ -17,9 +17,12 @@ export const GetCurrentPatientProfile = createAsyncThunk(
 
       return response.data;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Profil bilgileri alınamadı"
-      );
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        i18n.t("anUnexpectedErrorOccurred");
+
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -38,9 +41,12 @@ export const GetPatientProfile = createAsyncThunk(
 
       return response.data;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Profil bilgileri alınamadı"
-      );
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        i18n.t("anUnexpectedErrorOccurred");
+
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -63,10 +69,12 @@ export const UpdatePatientProfile = createAsyncThunk(
 
       return response.data;
     } catch (error) {
-      return rejectWithValue({
-        message: error.response?.data?.message || "Profil güncellenemedi",
-        statusCode: error.response?.status,
-      });
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        i18n.t("anUnexpectedErrorOccurred");
+
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -86,9 +94,12 @@ export const UploadProfileImageX = createAsyncThunk(
 
       return response.data;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Profil resmi yüklenemedi"
-      );
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        i18n.t("anUnexpectedErrorOccurred");
+
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -113,9 +124,12 @@ export const UploadProfileImage = createAsyncThunk(
 
       return { ...response.data, avatarUrl };
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Profil resmi yüklenemedi"
-      );
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        i18n.t("anUnexpectedErrorOccurred");
+
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -134,9 +148,12 @@ export const GetPatientsByPsychologist = createAsyncThunk(
 
       return response.data;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Hasta listesi alınamadı"
-      );
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        i18n.t("anUnexpectedErrorOccurred");
+
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -155,9 +172,12 @@ export const GetPatientsByInstitution = createAsyncThunk(
 
       return response.data;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Hasta listesi alınamadı"
-      );
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        i18n.t("anUnexpectedErrorOccurred");
+
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -176,9 +196,12 @@ export const UpdateLanguagePreference = createAsyncThunk(
       await dispatch(GetCurrentPatientProfile());
       return response.data;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Dil tercihi güncellenemedi"
-      );
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        i18n.t("anUnexpectedErrorOccurred");
+
+      return rejectWithValue(errorMessage);
     }
   }
 );

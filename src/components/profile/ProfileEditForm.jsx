@@ -249,20 +249,6 @@ const ProfileEditForm = ({
       onSubmit={handleSubmit(onSubmit)}
       sx={{ width: "100%" }}
     >
-      {error && (
-        <Alert
-          severity="error"
-          sx={{
-            mb: 3,
-            borderRadius: 2,
-            boxShadow: "0 4px 12px rgba(211, 47, 47, 0.15)",
-          }}
-        >
-          <AlertTitle>{t("error")}</AlertTitle>
-          {error}
-        </Alert>
-      )}
-
       <Card
         elevation={0}
         sx={{

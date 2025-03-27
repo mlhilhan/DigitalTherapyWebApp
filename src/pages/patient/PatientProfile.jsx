@@ -128,7 +128,7 @@ const PatientProfile = () => {
       toast.success(t("profileUpdatedSuccessfully"));
       setIsEditing(false);
     } catch (error) {
-      toast.error(error.response?.data?.message || t("profileupdatedFailed"));
+      toast.error(`${t("profileupdatedFailed")} ${error}`);
     }
   };
 

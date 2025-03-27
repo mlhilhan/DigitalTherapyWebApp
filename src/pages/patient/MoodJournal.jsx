@@ -30,6 +30,8 @@ import {
   setFilterMode,
   setFilterDate,
 } from "../../features/emotionalState/emotionalStateSlice";
+import DeleteConfirmationModal from "../../components/common/DeleteConfirmationModal";
+import { toast } from "react-toastify";
 
 const MoodJournal = () => {
   const dispatch = useDispatch();
@@ -38,11 +40,12 @@ const MoodJournal = () => {
 
   const [openEntryDialog, setOpenEntryDialog] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [entryToDelete, setEntryToDelete] = useState(null);
 
   const { t } = useTranslation();
   const theme = useTheme();
 
-  // Fetch all entries when component mounts
   useEffect(() => {
     dispatch(GetAllEmotionalStates());
   }, [dispatch]);
@@ -83,14 +86,39 @@ const MoodJournal = () => {
     setEditingEntry(null);
   };
 
-  const handleDeleteEntry = (id) => {
-    if (window.confirm(t("confirmDeleteMoodEntry"))) {
-      dispatch(DeleteEmotionalState(id));
-    }
+  const handleDeleteClick = (id) => {
+    setEntryToDelete(id);
+    setDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = (id) => {
+    dispatch(DeleteEmotionalState(id))
+      .unwrap()
+      .then(() => {
+        toast.success(t("moodRecordWasDeletedSuccessfully"));
+      })
+      .catch((error) => {
+        toast.error(error);
+      });
+  };
+
+  const handleCloseDeleteModal = () => {
+    setDeleteModalOpen(false);
+    setEntryToDelete(null);
   };
 
   const handleBookmarkEntry = (id) => {
-    dispatch(ToggleBookmarkEmotionalState(id));
+    dispatch(ToggleBookmarkEmotionalState(id))
+      .unwrap()
+      .then((response) => {
+        const message = response.isAdded
+          ? t("moodHasBeenBookmarked")
+          : t("moodRemovedBookmarked");
+        toast.success(message);
+      })
+      .catch((error) => {
+        toast.error(error);
+      });
   };
 
   const handleEdit = (entry) => {
@@ -136,7 +164,7 @@ const MoodJournal = () => {
                   <MoodEntryCard
                     entry={entry}
                     onEdit={handleEdit}
-                    onDelete={handleDeleteEntry}
+                    onDelete={handleDeleteClick}
                     onBookmark={handleBookmarkEntry}
                     getMoodColor={getMoodColor}
                     getMoodIcon={getMoodIcon}
@@ -192,11 +220,19 @@ const MoodJournal = () => {
           getMoodLabel={getMoodLabel}
         />
       )}
+
+      <DeleteConfirmationModal
+        open={deleteModalOpen}
+        onClose={handleCloseDeleteModal}
+        onConfirm={handleConfirmDelete}
+        itemId={entryToDelete}
+        title={t("deleteMoodEntryTitle")}
+        message={t("deleteMoodEntryConfirmation")}
+      />
     </Box>
   );
 };
 
-// Boş durum bileşeni
 const EmptyState = ({ onAddNew }) => {
   const { t } = useTranslation();
 

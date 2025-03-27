@@ -16,9 +16,12 @@ export const GetCurrentPsychologistProfile = createAsyncThunk(
 
       return response.data;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Profil bilgileri alınamadı"
-      );
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        i18n.t("anUnexpectedErrorOccurred");
+
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -37,9 +40,12 @@ export const GetPsychologistProfile = createAsyncThunk(
 
       return response.data;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Profil bilgileri alınamadı"
-      );
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        i18n.t("anUnexpectedErrorOccurred");
+
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -62,9 +68,12 @@ export const UpdatePsychologistProfile = createAsyncThunk(
 
       return response.data;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Profil güncellenemedi"
-      );
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        i18n.t("anUnexpectedErrorOccurred");
+
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -86,9 +95,12 @@ export const UploadPsychologistProfileImage = createAsyncThunk(
 
       return response.data;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Profil resmi yüklenemedi"
-      );
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        i18n.t("anUnexpectedErrorOccurred");
+
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -112,9 +124,12 @@ export const UpdatePsychologistSpecialties = createAsyncThunk(
 
       return response.data;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Uzmanlık alanları güncellenemedi"
-      );
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        i18n.t("anUnexpectedErrorOccurred");
+
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -146,9 +161,12 @@ export const UpdatePsychologistAvailability = createAsyncThunk(
 
       return response.data;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Uygunluk durumu güncellenemedi"
-      );
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        i18n.t("anUnexpectedErrorOccurred");
+
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -176,9 +194,12 @@ export const UpdatePsychologistLanguagePreference = createAsyncThunk(
 
       return response.data;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Dil tercihi güncellenemedi"
-      );
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        i18n.t("anUnexpectedErrorOccurred");
+
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -197,9 +218,12 @@ export const GetAvailablePsychologists = createAsyncThunk(
 
       return response.data;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Uygun psikologlar alınamadı"
-      );
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        i18n.t("anUnexpectedErrorOccurred");
+
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -218,9 +242,12 @@ export const GetPsychologistsBySpecialty = createAsyncThunk(
 
       return response.data;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Psikologlar alınamadı"
-      );
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        i18n.t("anUnexpectedErrorOccurred");
+
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -242,9 +269,12 @@ export const GetPsychologistsByInstitution = createAsyncThunk(
 
       return response.data;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Kuruma ait psikologlar alınamadı"
-      );
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        i18n.t("anUnexpectedErrorOccurred");
+
+      return rejectWithValue(errorMessage);
     }
   }
 );

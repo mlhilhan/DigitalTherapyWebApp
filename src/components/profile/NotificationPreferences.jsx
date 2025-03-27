@@ -110,7 +110,6 @@ const NotificationPreferences = ({ onClose }) => {
       });
     }
 
-    // Başarı mesajını kaldır
     if (saveSuccess) setSaveSuccess(false);
   };
 

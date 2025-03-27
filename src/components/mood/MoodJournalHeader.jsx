@@ -33,12 +33,12 @@ const MoodJournalHeader = ({
   onViewModeChange,
   onFilterChange,
   onAddNew,
+  patientName,
 }) => {
   const { t } = useTranslation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const [openFilterMenu, setOpenFilterMenu] = useState(null);
-
   const { loading } = useSelector((state) => state.emotionalState);
 
   const handleViewModeChange = (event, newMode) => {
@@ -77,100 +77,143 @@ const MoodJournalHeader = ({
             gap: 2,
           }}
         >
-          <Typography variant="h5" fontWeight={600}>
-            {t("moodJournal")}
-          </Typography>
-
-          <Box sx={{ display: "flex", gap: 1 }}>
-            <ToggleButtonGroup
-              value={viewMode}
-              exclusive
-              onChange={handleViewModeChange}
-              size={isMobile ? "small" : "medium"}
-              sx={{ mr: 1 }}
-            >
-              <ToggleButton value="journal">
-                <Tooltip title={t("journalView")}>
-                  <Timeline />
-                </Tooltip>
-              </ToggleButton>
-              <ToggleButton value="calendar">
-                <Tooltip title={t("calendarView")}>
-                  <CalendarMonth />
-                </Tooltip>
-              </ToggleButton>
-              <ToggleButton value="chart">
-                <Tooltip title={t("chartView")}>
-                  <BarChart />
-                </Tooltip>
-              </ToggleButton>
-            </ToggleButtonGroup>
-
-            <Box>
-              <Tooltip title={t("filter")}>
-                <IconButton
-                  onClick={handleFilterMenuOpen}
-                  color={filterMode !== "all" ? "primary" : "default"}
-                  size={isMobile ? "small" : "medium"}
-                >
-                  <FilterList />
-                </IconButton>
-              </Tooltip>
-              <Menu
-                anchorEl={openFilterMenu}
-                open={Boolean(openFilterMenu)}
-                onClose={handleFilterMenuClose}
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+              borderLeft: `4px solid ${theme.palette.primary.main}`,
+              pl: 1.5,
+            }}
+          >
+            <Typography variant="h5" fontWeight={600} sx={{ lineHeight: 1.2 }}>
+              {t("greetingWithName")}, {patientName}
+              <Typography
+                component="span"
+                variant="subtitle1"
+                color="text.secondary"
+                sx={{ display: "block", fontWeight: 400, fontSize: "0.85rem" }}
               >
-                <MenuItem
-                  selected={filterMode === "all"}
-                  onClick={() => handleFilterChange("all")}
-                >
-                  {t("allEntries")}
-                </MenuItem>
-                <MenuItem
-                  selected={filterMode === "today"}
-                  onClick={() => handleFilterChange("today")}
-                >
-                  {t("today")}
-                </MenuItem>
-                <MenuItem
-                  selected={filterMode === "week"}
-                  onClick={() => handleFilterChange("week")}
-                >
-                  {t("thisWeek")}
-                </MenuItem>
-                <MenuItem
-                  selected={filterMode === "month"}
-                  onClick={() => handleFilterChange("month")}
-                >
-                  {t("thisMonth")}
-                </MenuItem>
-                <MenuItem
-                  selected={filterMode === "bookmarked"}
-                  onClick={() => handleFilterChange("bookmarked")}
-                >
-                  {t("bookmarked")}
-                </MenuItem>
-                {filterDate && (
-                  <MenuItem
-                    selected={filterMode === "custom"}
-                    onClick={() => handleFilterChange("custom")}
-                  >
-                    {format(filterDate, "PPP", { locale: trLocale })}
-                  </MenuItem>
-                )}
-              </Menu>
-            </Box>
+                {t("trackYourEmotionalJourney")}
+              </Typography>
+            </Typography>
+          </Box>
 
-            <Button
-              variant="contained"
-              startIcon={<Add />}
-              onClick={onAddNew}
-              size={isMobile ? "small" : "medium"}
-              disabled={loading}
-            >
-              {t("newEntry")}
-            </Button>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            {viewMode === "journal" && (
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{
+                  backgroundColor: theme.palette.grey[100],
+                  px: 1.5,
+                  py: 0.5,
+                  borderRadius: 1,
+                  display: { xs: "none", sm: "block" },
+                }}
+              >
+                {filterMode === "all" && t("filterNone")}
+                {filterMode === "today" && t("filterToday")}
+                {filterMode === "week" && t("filterThisWeek")}
+                {filterMode === "month" && t("filterThisMonth")}
+                {filterMode === "bookmarked" && t("filterBookmarked")}
+                {filterMode === "custom" &&
+                  filterDate &&
+                  format(filterDate, "PP", { locale: trLocale })}
+              </Typography>
+            )}
+
+            <Box sx={{ display: "flex", gap: 1 }}>
+              <ToggleButtonGroup
+                value={viewMode}
+                exclusive
+                onChange={handleViewModeChange}
+                size={isMobile ? "small" : "medium"}
+                sx={{ mr: 1 }}
+              >
+                <ToggleButton value="journal">
+                  <Tooltip title={t("journalView")}>
+                    <Timeline />
+                  </Tooltip>
+                </ToggleButton>
+                <ToggleButton value="calendar">
+                  <Tooltip title={t("calendarView")}>
+                    <CalendarMonth />
+                  </Tooltip>
+                </ToggleButton>
+                <ToggleButton value="chart">
+                  <Tooltip title={t("chartView")}>
+                    <BarChart />
+                  </Tooltip>
+                </ToggleButton>
+              </ToggleButtonGroup>
+
+              <Box>
+                <Tooltip title={t("filter")}>
+                  <IconButton
+                    onClick={handleFilterMenuOpen}
+                    color={filterMode !== "all" ? "primary" : "default"}
+                    size={isMobile ? "small" : "medium"}
+                  >
+                    <FilterList />
+                  </IconButton>
+                </Tooltip>
+                <Menu
+                  anchorEl={openFilterMenu}
+                  open={Boolean(openFilterMenu)}
+                  onClose={handleFilterMenuClose}
+                >
+                  <MenuItem
+                    selected={filterMode === "all"}
+                    onClick={() => handleFilterChange("all")}
+                  >
+                    {t("allEntries")}
+                  </MenuItem>
+                  <MenuItem
+                    selected={filterMode === "today"}
+                    onClick={() => handleFilterChange("today")}
+                  >
+                    {t("today")}
+                  </MenuItem>
+                  <MenuItem
+                    selected={filterMode === "week"}
+                    onClick={() => handleFilterChange("week")}
+                  >
+                    {t("thisWeek")}
+                  </MenuItem>
+                  <MenuItem
+                    selected={filterMode === "month"}
+                    onClick={() => handleFilterChange("month")}
+                  >
+                    {t("thisMonth")}
+                  </MenuItem>
+                  <MenuItem
+                    selected={filterMode === "bookmarked"}
+                    onClick={() => handleFilterChange("bookmarked")}
+                  >
+                    {t("bookmarked")}
+                  </MenuItem>
+                  {filterDate && (
+                    <MenuItem
+                      selected={filterMode === "custom"}
+                      onClick={() => handleFilterChange("custom")}
+                    >
+                      {format(filterDate, "PPP", { locale: trLocale })}
+                    </MenuItem>
+                  )}
+                </Menu>
+              </Box>
+
+              <Button
+                variant="contained"
+                startIcon={<Add />}
+                onClick={onAddNew}
+                size={isMobile ? "small" : "medium"}
+                disabled={loading}
+              >
+                {t("newEntry")}
+              </Button>
+            </Box>
           </Box>
         </Box>
       </CardContent>

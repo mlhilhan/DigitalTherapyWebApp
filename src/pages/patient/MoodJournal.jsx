@@ -37,7 +37,6 @@ const MoodJournal = () => {
   const dispatch = useDispatch();
   const { entries, loading, error, viewMode, filterMode, filterDate } =
     useSelector((state) => state.emotionalState);
-
   const [openEntryDialog, setOpenEntryDialog] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -77,13 +76,27 @@ const MoodJournal = () => {
   };
 
   const handleAddEntry = (formData) => {
-    dispatch(CreateEmotionalState(formData));
-    setOpenEntryDialog(false);
+    dispatch(CreateEmotionalState(formData))
+      .unwrap()
+      .then(() => {
+        setOpenEntryDialog(false);
+        toast.success(t("moodRecordWasSavedSuccessfully"));
+      })
+      .catch((error) => {
+        toast.error(error);
+      });
   };
 
   const handleUpdateEntry = (formData, id) => {
-    dispatch(UpdateEmotionalState({ id, entryData: formData }));
-    setEditingEntry(null);
+    dispatch(UpdateEmotionalState({ id, entryData: formData }))
+      .unwrap()
+      .then(() => {
+        setEditingEntry(null);
+        toast.success(t("moodRecordWasUpdatedSuccessfully"));
+      })
+      .catch((error) => {
+        toast.error(error);
+      });
   };
 
   const handleDeleteClick = (id) => {
@@ -111,7 +124,7 @@ const MoodJournal = () => {
     dispatch(ToggleBookmarkEmotionalState(id))
       .unwrap()
       .then((response) => {
-        const message = response.isAdded
+        const message = response.isBookmarked
           ? t("moodHasBeenBookmarked")
           : t("moodRemovedBookmarked");
         toast.success(message);
@@ -151,6 +164,7 @@ const MoodJournal = () => {
         onViewModeChange={handleViewModeChange}
         onFilterChange={handleFilterChange}
         onAddNew={() => setOpenEntryDialog(true)}
+        patientName={null}
       />
 
       <Box sx={{ flexGrow: 1, overflow: "auto" }}>
@@ -241,9 +255,9 @@ const EmptyState = ({ onAddNew }) => {
       <Typography variant="h6" gutterBottom>
         {t("noMoodEntriesFound")}
       </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+      {/* <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
         {t("addYourFirstMoodEntry")}
-      </Typography>
+      </Typography> */}
       <Button variant="contained" startIcon={<Add />} onClick={onAddNew}>
         {t("addMoodEntry")}
       </Button>

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Paper,
   TextField,
@@ -7,16 +7,26 @@ import {
   IconButton,
   Divider,
   Button,
+  Tooltip,
+  Zoom,
   useMediaQuery,
   useTheme,
+  CircularProgress,
 } from "@mui/material";
-import { Send, EmojiEmotions, AttachFile, MicNone } from "@mui/icons-material";
+import {
+  Send,
+  EmojiEmotions,
+  AttachFile,
+  MicNone,
+  Psychology,
+} from "@mui/icons-material";
 import { useTranslation } from "react-i18next";
 
 const MessageInput = ({ message, setMessage, handleSendMessage, disabled }) => {
   const { t } = useTranslation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const [isFocused, setIsFocused] = useState(false);
 
   const handleKeyPress = (e) => {
     if (e.key === "Enter" && !e.shiftKey && !disabled) {
@@ -27,11 +37,15 @@ const MessageInput = ({ message, setMessage, handleSendMessage, disabled }) => {
 
   return (
     <Paper
-      elevation={3}
+      elevation={0}
       sx={{
         p: 2,
-        borderRadius: 2,
+        borderRadius: 3,
         backgroundColor: "white",
+        boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
+        border: "1px solid rgba(0,0,0,0.04)",
+        transition: "all 0.3s ease",
+        transform: isFocused ? "translateY(-4px)" : "translateY(0)",
       }}
     >
       <TextField
@@ -42,44 +56,112 @@ const MessageInput = ({ message, setMessage, handleSendMessage, disabled }) => {
         value={message}
         onChange={(e) => setMessage(e.target.value)}
         onKeyPress={handleKeyPress}
+        onFocus={() => setIsFocused(true)}
+        onBlur={() => setIsFocused(false)}
         disabled={disabled}
         InputProps={{
+          startAdornment: !isMobile && (
+            <InputAdornment position="start">
+              <Tooltip
+                title={t("aiAssistant")}
+                placement="top"
+                arrow
+                TransitionComponent={Zoom}
+              >
+                <Psychology color="primary" sx={{ mx: 1, opacity: 0.7 }} />
+              </Tooltip>
+            </InputAdornment>
+          ),
           endAdornment: (
             <InputAdornment position="end">
               <Box sx={{ display: "flex", alignItems: "center" }}>
                 {!isMobile && (
                   <>
-                    <IconButton
-                      color="primary"
-                      size="small"
-                      disabled={disabled}
+                    <Tooltip
+                      title={t("addEmoji")}
+                      arrow
+                      TransitionComponent={Zoom}
                     >
-                      <EmojiEmotions />
-                    </IconButton>
-                    <IconButton
-                      color="primary"
-                      size="small"
-                      disabled={disabled}
+                      <IconButton
+                        color="primary"
+                        size="small"
+                        disabled={disabled}
+                        sx={{
+                          mx: 0.5,
+                          "&:hover": {
+                            bgcolor: "rgba(25, 118, 210, 0.08)",
+                          },
+                        }}
+                      >
+                        <EmojiEmotions fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+
+                    <Tooltip
+                      title={t("attachFile")}
+                      arrow
+                      TransitionComponent={Zoom}
                     >
-                      <AttachFile />
-                    </IconButton>
-                    <IconButton
-                      color="primary"
-                      size="small"
-                      disabled={disabled}
+                      <IconButton
+                        color="primary"
+                        size="small"
+                        disabled={disabled}
+                        sx={{
+                          mx: 0.5,
+                          "&:hover": {
+                            bgcolor: "rgba(25, 118, 210, 0.08)",
+                          },
+                        }}
+                      >
+                        <AttachFile fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+
+                    <Tooltip
+                      title={t("voiceInput")}
+                      arrow
+                      TransitionComponent={Zoom}
                     >
-                      <MicNone />
-                    </IconButton>
+                      <IconButton
+                        color="primary"
+                        size="small"
+                        disabled={disabled}
+                        sx={{
+                          mx: 0.5,
+                          "&:hover": {
+                            bgcolor: "rgba(25, 118, 210, 0.08)",
+                          },
+                        }}
+                      >
+                        <MicNone fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+
                     <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
                   </>
                 )}
+
                 <Button
                   variant="contained"
                   color="primary"
                   disableElevation
                   onClick={handleSendMessage}
-                  endIcon={<Send />}
                   disabled={disabled || !message.trim()}
+                  endIcon={disabled ? <CircularProgress size={16} /> : <Send />}
+                  sx={{
+                    borderRadius: "12px",
+                    px: 2,
+                    py: 1,
+                    textTransform: "none",
+                    boxShadow: message.trim()
+                      ? "0 4px 10px rgba(25, 118, 210, 0.2)"
+                      : "none",
+                    transition: "all 0.2s ease",
+                    "&:hover": {
+                      transform: "translateY(-2px)",
+                      boxShadow: "0 6px 12px rgba(25, 118, 210, 0.3)",
+                    },
+                  }}
                 >
                   {t("send")}
                 </Button>
@@ -95,6 +177,16 @@ const MessageInput = ({ message, setMessage, handleSendMessage, disabled }) => {
         sx={{
           "& .MuiOutlinedInput-root": {
             borderRadius: 2,
+            backgroundColor: "#FAFAFA",
+            "&:hover": {
+              backgroundColor: "#F5F5F5",
+            },
+            "&.Mui-focused": {
+              backgroundColor: "#F5F5F5",
+            },
+          },
+          "& .MuiOutlinedInput-notchedOutline": {
+            borderColor: "rgba(0, 0, 0, 0.08)",
           },
         }}
       />

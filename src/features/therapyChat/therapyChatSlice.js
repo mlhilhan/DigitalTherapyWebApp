@@ -120,6 +120,31 @@ export const EndChatSession = createAsyncThunk(
   }
 );
 
+export const ActivateSession = createAsyncThunk(
+  "therapyChat/ActivateSession",
+  async (sessionId, { rejectWithValue, dispatch }) => {
+    try {
+      const response = await therapyChatAPI.activateSession(sessionId);
+
+      if (!response.success) {
+        return rejectWithValue(response.message || "Oturum aktifleştirilemedi");
+      }
+
+      // Oturumları yeniden getir
+      await dispatch(GetChatSessions());
+
+      return response.data;
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        i18n.t("anUnexpectedErrorOccurred");
+
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
 const initialState = {
   activeSession: null,
   currentMessages: [],
@@ -238,6 +263,21 @@ const therapyChatSlice = createSlice({
         state.activeSession = null;
       })
       .addCase(EndChatSession.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // ActivateSession
+      .addCase(ActivateSession.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(ActivateSession.fulfilled, (state, action) => {
+        state.loading = false;
+        state.activeSession = action.payload;
+        state.success = true;
+      })
+      .addCase(ActivateSession.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });

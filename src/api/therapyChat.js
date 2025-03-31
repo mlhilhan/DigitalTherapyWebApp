@@ -35,4 +35,18 @@ export const therapyChatAPI = {
     const response = await api.post(`/TherapyChat/EndSession/${sessionId}`);
     return response.data;
   },
+
+  // Aktif oturumu değiştir
+  // activateSession: async (sessionId) => {
+  //   const response = await api.post(
+  //     `/TherapyChat/ActivateSession/${sessionId}`
+  //   );
+  //   return response.data;
+  // },
+  activateSession: async (sessionId) => {
+    const response = await api.post(
+      `/TherapyChat/ActivateSession/${sessionId}`
+    );
+    return response.data;
+  },
 };

@@ -64,6 +64,7 @@ const TherapyChat = () => {
   const [localLoading, setLocalLoading] = useState(true);
   const [isTyping, setIsTyping] = useState(false);
   const [errorOpen, setErrorOpen] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const messagesEndRef = useRef(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [showWelcomeMessage, setShowWelcomeMessage] = useState(true);
@@ -87,7 +88,6 @@ const TherapyChat = () => {
     const initChat = async () => {
       try {
         await dispatch(GetChatSessions()).unwrap();
-
         if (!activeSession) {
           await dispatch(StartChatSession()).unwrap();
         }
@@ -137,8 +137,6 @@ const TherapyChat = () => {
   const handleSendMessage = async () => {
     if (newMessage.trim() === "" || !activeSession) return;
 
-    console.log("Sending message to session:", activeSession.id);
-
     // Optimistic user message for UI
     const userMessage = {
       id: `temp-${new Date().getTime()}`,
@@ -152,22 +150,32 @@ const TherapyChat = () => {
     setNewMessage("");
     setShowWelcomeMessage(false);
 
-    // Show typing indicator
     setIsTyping(true);
 
     try {
-      await dispatch(
+      const result = await dispatch(
         SendChatMessage({
           message: newMessage,
           sessionId: activeSession?.id,
         })
       ).unwrap();
 
-      // Get updated messages
+      const respondedSessionId = result?.data?.sessionId;
+
       await dispatch(GetChatMessages(activeSession.id)).unwrap();
+
+      if (result?.data?.sessionActivated) {
+        await dispatch(GetChatSessions()).unwrap();
+
+        if (drawerOpen) {
+          setDrawerOpen(false);
+          setTimeout(() => setDrawerOpen(true), 10);
+        }
+      }
+
       setIsTyping(false);
     } catch (error) {
-      console.error("Failed to send message:", error);
+      setErrorMessage(error.message || t("anErrorOccurred"));
       setErrorOpen(true);
       setIsTyping(false);
     }
@@ -202,6 +210,7 @@ const TherapyChat = () => {
 
   const handleErrorClose = () => {
     setErrorOpen(false);
+    setErrorMessage("");
     dispatch(clearChatError());
   };
 
@@ -214,30 +223,55 @@ const TherapyChat = () => {
       setShowWelcomeMessage(true);
       setDrawerOpen(false);
     } catch (error) {
-      console.error("Error starting new session:", error);
+      setErrorMessage(error.message || t("anErrorOccurred"));
       setErrorOpen(true);
     }
   };
 
-  // Get distinct dates from sessions for grouping
-  const sessionDates = sessions
+  const uniqueSessions = sessions.filter(
+    (session, index, self) =>
+      index === self.findIndex((s) => s.id === session.id)
+  );
+
+  // Ardından bu benzersiz oturumları kullanarak gruplama yapın
+  const sessionDates = uniqueSessions
     ? [
         ...new Set(
-          sessions.map((session) =>
+          uniqueSessions.map((session) =>
             new Date(session.startTime).toLocaleDateString("tr-TR")
           )
         ),
       ].sort((a, b) => new Date(b) - new Date(a))
     : [];
 
-  // Group sessions by date
+  // Grupları oluşturun
   const groupedSessions = sessionDates.map((date) => ({
     date,
-    sessions: sessions.filter(
+    sessions: uniqueSessions.filter(
       (session) =>
         new Date(session.startTime).toLocaleDateString("tr-TR") === date
     ),
   }));
+
+  // // Get distinct dates from sessions for grouping
+  // const sessionDates = sessions
+  //   ? [
+  //       ...new Set(
+  //         sessions.map((session) =>
+  //           new Date(session.startTime).toLocaleDateString("tr-TR")
+  //         )
+  //       ),
+  //     ].sort((a, b) => new Date(b) - new Date(a))
+  //   : [];
+
+  // // Group sessions by date
+  // const groupedSessions = sessionDates.map((date) => ({
+  //   date,
+  //   sessions: sessions.filter(
+  //     (session) =>
+  //       new Date(session.startTime).toLocaleDateString("tr-TR") === date
+  //   ),
+  // }));
 
   // Show loading while chat initializes
   if (localLoading || loading) {
@@ -480,7 +514,7 @@ const TherapyChat = () => {
             borderRadius: 2,
           }}
         >
-          {error || t("anErrorOccurred")}
+          {errorMessage || error || t("anErrorOccurred")}
         </Alert>
       </Snackbar>
 

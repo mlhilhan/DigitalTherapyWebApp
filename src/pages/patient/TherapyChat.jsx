@@ -1,91 +1,152 @@
 import React, { useState, useRef, useEffect } from "react";
 import {
   Box,
-  Typography,
-  TextField,
-  IconButton,
   Paper,
-  Avatar,
-  Chip,
-  Divider,
-  CircularProgress,
   Card,
   CardContent,
-  InputAdornment,
-  useTheme,
-  useMediaQuery,
-  Button,
-  Menu,
-  MenuItem,
-  ListItemIcon,
-  ListItemText,
+  Snackbar,
+  Alert,
+  Typography,
 } from "@mui/material";
-import {
-  Send,
-  Psychology,
-  Person,
-  MoreVert,
-  InfoOutlined,
-  DeleteOutline,
-  ContentCopy,
-  EmojiEmotions,
-  AttachFile,
-  MicNone,
-} from "@mui/icons-material";
+import { useDispatch, useSelector } from "react-redux";
 import { useTranslation } from "react-i18next";
-import { useSelector } from "react-redux";
-import { format } from "date-fns";
-import trLocale from "date-fns/locale/tr";
+import ChatHeader from "../../components/chat/ChatHeader";
+import MessageSuggestions from "../../components/chat/MessageSuggestions";
+import MessageBubble from "../../components/chat/MessageBubble";
+import TypingIndicator from "../../components/chat/TypingIndicator";
+import MessageInput from "../../components/chat/MessageInput";
+import MessageMenu from "../../components/chat/MessageMenu";
 import LoadingComponent, {
   LOADING_TYPES,
 } from "../../components/common/LoadingComponent";
-
-// dummy data
-const initialMessages = [
-  {
-    id: 1,
-    sender: "assistant",
-    text: "Merhaba! Ben Digital Terapi Asistanı. Bugün nasıl hissediyorsun?",
-    timestamp: new Date(new Date().getTime() - 60000),
-  },
-];
-
-// Öneri mesajlar
-const suggestedMessages = [
-  "Bugün kendimi biraz üzgün hissediyorum",
-  "Anxiety yaşıyorum",
-  "Uyku problemlerim var",
-  "İş yerinde stres yaşıyorum",
-];
+import {
+  StartChatSession,
+  SendChatMessage,
+  GetChatMessages,
+  GetChatSessions,
+  addLocalMessage,
+  clearChatError,
+  setActiveSession,
+  clearMessages,
+} from "../../features/therapyChat/therapyChatSlice";
+import {
+  Drawer,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemText,
+  Divider,
+  IconButton,
+  Badge,
+} from "@mui/material";
+import { History, Add } from "@mui/icons-material";
 
 const TherapyChat = () => {
-  const [messages, setMessages] = useState(initialMessages);
+  const { t } = useTranslation();
+  const dispatch = useDispatch();
   const [newMessage, setNewMessage] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
   const [menuAnchorEl, setMenuAnchorEl] = useState(null);
   const [selectedMessageId, setSelectedMessageId] = useState(null);
-  const [infoAnchorEl, setInfoAnchorEl] = useState(null);
-  const [loading, setLoading] = useState(true); // Loading durumu
-  const { t } = useTranslation();
+  const [localLoading, setLocalLoading] = useState(true);
+  const [isTyping, setIsTyping] = useState(false);
+  const [errorOpen, setErrorOpen] = useState(false);
   const messagesEndRef = useRef(null);
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const { user } = useSelector((state) => state.auth);
+  const {
+    activeSession,
+    currentMessages,
+    sessions,
+    loading,
+    sending,
+    loadingMessages,
+    error,
+  } = useSelector((state) => state.therapyChat);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 1500);
+    dispatch(GetChatSessions());
+  }, [dispatch]);
 
-    return () => clearTimeout(timer);
-  }, []);
+  // Initial loading and session setup
+  useEffect(() => {
+    const initChat = async () => {
+      try {
+        await dispatch(GetChatSessions()).unwrap();
 
+        if (!activeSession) {
+          await dispatch(StartChatSession()).unwrap();
+        }
+      } catch (error) {
+        console.error("Failed to initialize chat:", error);
+      } finally {
+        setTimeout(() => {
+          setLocalLoading(false);
+        }, 1000);
+      }
+    };
+
+    initChat();
+  }, [dispatch, activeSession]);
+
+  useEffect(() => {
+    if (activeSession?.id) {
+      dispatch(GetChatMessages(activeSession.id));
+    }
+  }, [dispatch, activeSession]);
+
+  // Handle error display
+  useEffect(() => {
+    if (error) {
+      setErrorOpen(true);
+    }
+  }, [error]);
+
+  // Scroll to bottom when messages change
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [currentMessages, isTyping]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const handleSendMessage = async () => {
+    if (newMessage.trim() === "" || !activeSession) return;
+
+    // Aktif oturum ID'sini log'la
+    console.log("Sending message to session:", activeSession.id);
+
+    // Optimistik olarak kullanıcı mesajını UI'a ekle
+    const userMessage = {
+      id: `temp-${new Date().getTime()}`,
+      isAiGenerated: false,
+      content: newMessage,
+      sentAt: new Date(),
+      sessionId: activeSession.id, // Oturum ID'sini ekle
+    };
+
+    dispatch(addLocalMessage(userMessage));
+    setNewMessage("");
+
+    // Typing indicator'ı göster
+    setIsTyping(true);
+
+    try {
+      await dispatch(
+        SendChatMessage({
+          message: newMessage,
+          sessionId: activeSession?.id,
+        })
+      ).unwrap();
+
+      // Güncel mesajları getir
+      await dispatch(GetChatMessages(activeSession.id)).unwrap();
+      setIsTyping(false);
+    } catch (error) {
+      console.error("Failed to send message:", error);
+      setErrorOpen(true);
+      setIsTyping(false);
+    }
   };
 
   const handleMenuOpen = (event, messageId) => {
@@ -98,95 +159,29 @@ const TherapyChat = () => {
     setSelectedMessageId(null);
   };
 
-  const handleInfoOpen = (event) => {
-    setInfoAnchorEl(event.currentTarget);
-  };
-
-  const handleInfoClose = () => {
-    setInfoAnchorEl(null);
-  };
-
-  const handleSendMessage = () => {
-    if (newMessage.trim() === "") return;
-
-    const userMessage = {
-      id: messages.length + 1,
-      sender: "user",
-      text: newMessage,
-      timestamp: new Date(),
-    };
-    setMessages([...messages, userMessage]);
-    setNewMessage("");
-
-    setIsTyping(true);
-    setTimeout(() => {
-      const assistantMessage = {
-        id: messages.length + 2,
-        sender: "assistant",
-        text: getAssistantResponse(newMessage),
-        timestamp: new Date(),
-      };
-      setMessages((prevMessages) => [...prevMessages, assistantMessage]);
-      setIsTyping(false);
-    }, 1500);
-  };
-
-  const getAssistantResponse = (message) => {
-    const lowerMessage = message.toLowerCase();
-
-    if (lowerMessage.includes("üzgün") || lowerMessage.includes("mutsuz")) {
-      return "Üzgün hissettiğini duyduğuma üzüldüm. Bu duyguyu tetikleyen belirli bir durum var mı?";
-    }
-
-    if (
-      lowerMessage.includes("anxiety") ||
-      lowerMessage.includes("kaygı") ||
-      lowerMessage.includes("endişe")
-    ) {
-      return "Kaygı zor bir duygu olabilir. Derin nefes alıp verme gibi basit teknikler deneyebilirsin. Kaygını neyin tetiklediğini tanımlayabilir misin?";
-    }
-
-    if (lowerMessage.includes("uyku")) {
-      return "Uyku problemleri yaşamak zor olabilir. Yatmadan önce ekran kullanımını azaltmak ve düzenli bir uyku rutini oluşturmak yardımcı olabilir. Uyku düzenin nasıl?";
-    }
-
-    if (lowerMessage.includes("stres") || lowerMessage.includes("iş")) {
-      return "İş yerinde stres yaşamak oldukça yaygın. Kendine küçük molalar vermek ve önceliklerini belirlemek yardımcı olabilir. Stres seviyeni nasıl yönetiyorsun?";
-    }
-
-    // Default response
-    return "Paylaştığın için teşekkür ederim. Bununla ilgili daha fazla şey anlatmak ister misin?";
-  };
-
-  const handleKeyPress = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
-  };
-
-  const formatMessageTime = (timestamp) => {
-    return format(timestamp, "HH:mm", { locale: trLocale });
-  };
-
   const handleSuggestedMessage = (message) => {
     setNewMessage(message);
   };
 
-  const copyMessage = (id) => {
-    const message = messages.find((m) => m.id === id);
+  const copyMessage = () => {
+    const message = currentMessages.find((m) => m.id === selectedMessageId);
     if (message) {
-      navigator.clipboard.writeText(message.text);
+      navigator.clipboard.writeText(message.content || message.text);
     }
     handleMenuClose();
   };
 
-  const deleteMessage = (id) => {
-    setMessages(messages.filter((message) => message.id !== id));
+  const deleteMessage = () => {
     handleMenuClose();
   };
 
-  if (loading) {
+  const handleErrorClose = () => {
+    setErrorOpen(false);
+    dispatch(clearChatError());
+  };
+
+  // Show loading while chat initializes
+  if (localLoading || loading) {
     return <LoadingComponent type={LOADING_TYPES.CHAT} />;
   }
 
@@ -212,105 +207,26 @@ const TherapyChat = () => {
           <Box
             sx={{
               display: "flex",
-              alignItems: "center",
               justifyContent: "space-between",
+              alignItems: "center",
             }}
           >
-            <Box sx={{ display: "flex", alignItems: "center" }}>
-              <Avatar
-                sx={{
-                  bgcolor: "primary.main",
-                  color: "white",
-                  width: 48,
-                  height: 48,
-                  mr: 2,
-                }}
-              >
-                <Psychology fontSize="large" />
-              </Avatar>
-              <Box>
-                <Typography variant="h6" fontWeight={600}>
-                  {t("digitalTherapyAssistant")}
-                </Typography>
-                <Box sx={{ display: "flex", alignItems: "center" }}>
-                  <Chip
-                    size="small"
-                    color="success"
-                    label={t("online")}
-                    sx={{ mr: 1, height: 20 }}
-                  />
-                  <Typography variant="caption" color="text.secondary">
-                    {t("aiPowered")}
-                  </Typography>
-                </Box>
-              </Box>
-            </Box>
-
+            <ChatHeader />
             <IconButton
               color="primary"
-              onClick={handleInfoOpen}
-              aria-label={t("info")}
+              onClick={() => setDrawerOpen(true)}
+              aria-label="Geçmiş Oturumlar"
             >
-              <InfoOutlined />
+              <Badge badgeContent={sessions?.length} color="primary">
+                <History />
+              </Badge>
             </IconButton>
-
-            <Menu
-              anchorEl={infoAnchorEl}
-              open={Boolean(infoAnchorEl)}
-              onClose={handleInfoClose}
-              PaperProps={{
-                sx: {
-                  borderRadius: 2,
-                  width: 280,
-                  p: 1.5,
-                  boxShadow: "0 8px 16px rgba(0,0,0,0.1)",
-                },
-              }}
-              transformOrigin={{ horizontal: "right", vertical: "top" }}
-              anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
-            >
-              <Typography variant="subtitle2" sx={{ px: 1, pb: 1 }}>
-                {t("aboutDigitalTherapyAssistant")}
-              </Typography>
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{ px: 1, pb: 1 }}
-              >
-                {t("digitalAssistantDescription")}
-              </Typography>
-              <Divider sx={{ my: 1 }} />
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ px: 1 }}
-              >
-                {t("aiDisclaimer")}
-              </Typography>
-            </Menu>
           </Box>
         </CardContent>
       </Card>
 
       {/* Message Suggestions */}
-      <Box sx={{ mb: 2, display: "flex", flexWrap: "wrap", gap: 1 }}>
-        {suggestedMessages.map((message, index) => (
-          <Chip
-            key={index}
-            label={message}
-            onClick={() => handleSuggestedMessage(message)}
-            sx={{
-              bgcolor: "background.paper",
-              "&:hover": {
-                bgcolor: "rgba(0, 0, 0, 0.04)",
-              },
-              borderRadius: "16px",
-              py: 0.5,
-            }}
-            clickable
-          />
-        ))}
-      </Box>
+      <MessageSuggestions onSelectSuggestion={handleSuggestedMessage} />
 
       {/* Chat Messages */}
       <Paper
@@ -327,193 +243,24 @@ const TherapyChat = () => {
         }}
       >
         <Box sx={{ flexGrow: 1 }}>
-          {messages.map((message) => (
-            <Box
-              key={message.id}
-              sx={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems:
-                  message.sender === "user" ? "flex-end" : "flex-start",
-                mb: 2,
-                position: "relative",
-              }}
-            >
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "flex-start",
-                  maxWidth: "70%",
-                }}
-              >
-                {message.sender === "assistant" && (
-                  <Avatar
-                    sx={{
-                      bgcolor: "primary.main",
-                      width: 36,
-                      height: 36,
-                      mr: 1,
-                      mt: 0.5,
-                    }}
-                  >
-                    <Psychology />
-                  </Avatar>
-                )}
-
-                <Box
-                  sx={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems:
-                      message.sender === "user" ? "flex-end" : "flex-start",
-                  }}
-                >
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      mb: 0.5,
-                      width: "100%",
-                    }}
-                  >
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        color: "text.secondary",
-                        fontWeight: 500,
-                        ml: message.sender === "user" ? 0 : 0.5,
-                      }}
-                    >
-                      {message.sender === "user"
-                        ? user?.firstName || "Sen"
-                        : "Asistan"}
-                    </Typography>
-                    <Typography
-                      variant="caption"
-                      sx={{ color: "text.secondary", ml: 2 }}
-                    >
-                      {formatMessageTime(message.timestamp)}
-                    </Typography>
-                  </Box>
-
-                  <Paper
-                    elevation={0}
-                    sx={{
-                      p: 2,
-                      pr: 3.5,
-                      borderRadius: 2,
-                      backgroundColor:
-                        message.sender === "user"
-                          ? "primary.main"
-                          : "background.paper",
-                      color:
-                        message.sender === "user" ? "white" : "text.primary",
-                      boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                      position: "relative",
-                    }}
-                  >
-                    <Typography
-                      variant="body1"
-                      sx={{
-                        whiteSpace: "pre-wrap",
-                        wordBreak: "break-word",
-                      }}
-                    >
-                      {message.text}
-                    </Typography>
-
-                    <IconButton
-                      size="small"
-                      onClick={(e) => handleMenuOpen(e, message.id)}
-                      sx={{
-                        position: "absolute",
-                        right: 5,
-                        top: 5,
-                        backgroundColor:
-                          message.sender === "user"
-                            ? "rgba(255, 255, 255, 0.15)"
-                            : "rgba(0, 0, 0, 0.05)",
-                        color:
-                          message.sender === "user"
-                            ? "white"
-                            : "text.secondary",
-                        padding: "2px",
-                        "&:hover": {
-                          backgroundColor:
-                            message.sender === "user"
-                              ? "rgba(255, 255, 255, 0.25)"
-                              : "rgba(0, 0, 0, 0.1)",
-                        },
-                      }}
-                    >
-                      <MoreVert fontSize="small" />
-                    </IconButton>
-                  </Paper>
-                </Box>
-
-                {message.sender === "user" && (
-                  <Avatar
-                    src={user?.avatarUrl}
-                    sx={{
-                      bgcolor: "grey.300",
-                      width: 36,
-                      height: 36,
-                      ml: 1,
-                      mt: 0.5,
-                    }}
-                  >
-                    <Person />
-                  </Avatar>
-                )}
-              </Box>
-            </Box>
-          ))}
-
-          {/* Asistan yazıyor göstergesi */}
-          {isTyping && (
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                mb: 2,
-              }}
-            >
-              <Avatar
-                sx={{
-                  bgcolor: "primary.main",
-                  width: 36,
-                  height: 36,
-                  mr: 1,
-                }}
-              >
-                <Psychology />
-              </Avatar>
-              <Paper
-                elevation={0}
-                sx={{
-                  p: 2,
-                  borderRadius: 2,
-                  backgroundColor: "background.paper",
-                  display: "flex",
-                  alignItems: "center",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                }}
-              >
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 0.5,
-                  }}
-                >
-                  <CircularProgress size={10} />
-                  <CircularProgress size={10} />
-                  <CircularProgress size={10} />
-                </Box>
-              </Paper>
+          {loadingMessages && currentMessages.length === 0 && (
+            <Box sx={{ display: "flex", justifyContent: "center", my: 2 }}>
+              <TypingIndicator />
             </Box>
           )}
+
+          {/* Mesajları tarih sırasına göre göster (eskiden yeniye) */}
+          {currentMessages.map((message) => (
+            <MessageBubble
+              key={message.id}
+              message={message}
+              user={user}
+              onMenuOpen={handleMenuOpen}
+            />
+          ))}
+
+          {/* Typing indicator */}
+          {isTyping && <TypingIndicator />}
 
           {/* Scroll helper */}
           <div ref={messagesEndRef} />
@@ -521,100 +268,129 @@ const TherapyChat = () => {
       </Paper>
 
       {/* Message Input */}
-      <Paper
-        elevation={3}
-        sx={{
-          p: 2,
-          borderRadius: 2,
-          backgroundColor: "white",
-        }}
-      >
-        <TextField
-          fullWidth
-          multiline
-          maxRows={4}
-          placeholder={t("typeYourMessageHere")}
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          onKeyPress={handleKeyPress}
-          InputProps={{
-            endAdornment: (
-              <InputAdornment position="end">
-                <Box sx={{ display: "flex", alignItems: "center" }}>
-                  {!isMobile && (
-                    <>
-                      <IconButton color="primary" size="small">
-                        <EmojiEmotions />
-                      </IconButton>
-                      <IconButton color="primary" size="small">
-                        <AttachFile />
-                      </IconButton>
-                      <IconButton color="primary" size="small">
-                        <MicNone />
-                      </IconButton>
-                      <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
-                    </>
-                  )}
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    disableElevation
-                    onClick={handleSendMessage}
-                    endIcon={<Send />}
-                    disabled={!newMessage.trim()}
-                  >
-                    {t("send")}
-                  </Button>
-                </Box>
-              </InputAdornment>
-            ),
-            sx: {
-              p: 1,
-              borderRadius: 2,
-            },
-          }}
-          variant="outlined"
-          sx={{
-            "& .MuiOutlinedInput-root": {
-              borderRadius: 2,
-            },
-          }}
-        />
-      </Paper>
+      <MessageInput
+        message={newMessage}
+        setMessage={setNewMessage}
+        handleSendMessage={handleSendMessage}
+        disabled={sending || !activeSession}
+      />
 
       {/* Message Menu */}
-      <Menu
+      <MessageMenu
         anchorEl={menuAnchorEl}
         open={Boolean(menuAnchorEl)}
-        onClose={handleMenuClose}
-        anchorOrigin={{
-          vertical: "top",
-          horizontal: "center",
-        }}
-        transformOrigin={{
-          vertical: "top",
-          horizontal: "center",
-        }}
-        sx={{
-          "& .MuiPaper-root": {
-            borderRadius: 2,
-            boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+        handleClose={handleMenuClose}
+        handleCopy={copyMessage}
+        handleDelete={deleteMessage}
+      />
+
+      {/* Error snackbar */}
+      <Snackbar
+        open={errorOpen}
+        autoHideDuration={6000}
+        onClose={handleErrorClose}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={handleErrorClose}
+          severity="error"
+          sx={{ width: "100%" }}
+        >
+          {error || t("anErrorOccurred")}
+        </Alert>
+      </Snackbar>
+
+      {/** Drawer */}
+      <Drawer
+        anchor="right"
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        PaperProps={{
+          sx: {
+            top: "64px",
           },
         }}
       >
-        <MenuItem onClick={() => copyMessage(selectedMessageId)}>
-          <ListItemIcon>
-            <ContentCopy fontSize="small" />
-          </ListItemIcon>
-          <ListItemText primary={t("copy")} />
-        </MenuItem>
-        <MenuItem onClick={() => deleteMessage(selectedMessageId)}>
-          <ListItemIcon>
-            <DeleteOutline fontSize="small" color="error" />
-          </ListItemIcon>
-          <ListItemText primary={t("delete")} sx={{ color: "error.main" }} />
-        </MenuItem>
-      </Menu>
+        <Box sx={{ width: 300, p: 2 }}>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              mb: 2,
+            }}
+          >
+            <Typography variant="h6">Terapi Oturumları</Typography>
+            <IconButton
+              color="primary"
+              onClick={async () => {
+                try {
+                  console.log(
+                    "New session button clicked, forcing new session"
+                  );
+                  dispatch(clearMessages());
+                  dispatch(setActiveSession(null));
+                  await dispatch(StartChatSession(true)).unwrap();
+                  await dispatch(GetChatSessions()).unwrap();
+                  setDrawerOpen(false);
+                } catch (error) {
+                  console.error("Error starting new session:", error);
+                  setErrorOpen(true);
+                }
+              }}
+            >
+              <Add />
+            </IconButton>
+          </Box>
+          <Divider sx={{ mb: 2 }} />
+
+          {loading ? (
+            <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
+              <CircularProgress size={30} />
+            </Box>
+          ) : sessions && sessions.length > 0 ? (
+            <List>
+              {sessions.map((session) => (
+                <ListItem key={session.id} disablePadding>
+                  <ListItemButton
+                    selected={activeSession?.id === session.id}
+                    onClick={() => {
+                      dispatch(setActiveSession(session));
+                      dispatch(GetChatMessages(session.id));
+                      setDrawerOpen(false);
+                    }}
+                  >
+                    <ListItemText
+                      primary={`Oturum: ${new Date(
+                        session.startTime
+                      ).toLocaleDateString()}`}
+                      secondary={
+                        <>
+                          <Typography variant="body2" noWrap>
+                            {session.lastMessage || "Henüz mesaj yok"}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            Mesaj: {session.messageCount || 0}
+                            {session.isActive && " • Aktif"}
+                          </Typography>
+                        </>
+                      }
+                    />
+                  </ListItemButton>
+                </ListItem>
+              ))}
+            </List>
+          ) : (
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ p: 2, textAlign: "center" }}
+            >
+              Henüz hiç terapi oturumu bulunmuyor.
+            </Typography>
+          )}
+        </Box>
+      </Drawer>
     </Box>
   );
 };

@@ -193,6 +193,30 @@ export const CompleteSession = createAsyncThunk(
   }
 );
 
+export const ClearAiSession = createAsyncThunk(
+  "therapyChat/ClearAiSession",
+  async (sessionId, { rejectWithValue, dispatch }) => {
+    try {
+      const response = await therapyChatAPI.clearAiSession(sessionId);
+
+      if (!response.success) {
+        return rejectWithValue(response.message || "Oturum arşivlenemedi");
+      }
+
+      await dispatch(GetChatSessions());
+
+      return response;
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        i18n.t("anUnexpectedErrorOccurred");
+
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
 const initialState = {
   activeSession: null,
   currentMessages: [],
@@ -406,6 +430,28 @@ const therapyChatSlice = createSlice({
         }
       })
       .addCase(CompleteSession.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // ClearAiSession
+      .addCase(ClearAiSession.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(ClearAiSession.fulfilled, (state, action) => {
+        state.loading = false;
+        state.success = true;
+
+        if (
+          state.activeSession &&
+          state.activeSession.id === action.payload.sessionId
+        ) {
+          state.activeSession = null;
+          state.currentMessages = [];
+        }
+      })
+      .addCase(ClearAiSession.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });

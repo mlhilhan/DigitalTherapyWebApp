@@ -23,11 +23,6 @@ import {
   Tooltip,
   Zoom,
   Chip,
-  DialogTitle,
-  Dialog,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
   alpha,
 } from "@mui/material";
 import { useDispatch, useSelector } from "react-redux";
@@ -62,8 +57,8 @@ import {
   clearMessages,
   ClearAllSessions,
   CompleteSession,
+  ClearAiSession,
 } from "../../features/therapyChat/therapyChatSlice";
-import DeleteConfirmationModal from "../../components/common/DeleteConfirmationModal";
 import NotificationSnackbar from "../../components/common/NotificationSnackbar";
 import ConfirmationModal from "../../components/common/ConfirmationModal";
 
@@ -315,7 +310,7 @@ const TherapyChat = () => {
     });
   };
 
-  const handleDeleteSession = async (sessionId) => {
+  const handleDeleteSession = (sessionId) => {
     setConfirmModalProps({
       open: true,
       title: t("deleteSession"),
@@ -328,12 +323,8 @@ const TherapyChat = () => {
       warningMessage: t("deleteWarningMessage"),
       onConfirm: async (id) => {
         try {
-          // Burada DeleteSession API'nizi çağırın (veya arşivleme API'si)
-          //await dispatch(ArchiveSession(id)).unwrap();
-          showNotification(t("sessionDeleted"), "success");
-
-          // Session listesini güncelle
-          await dispatch(GetChatSessions());
+          await dispatch(ClearAiSession(id)).unwrap();
+          showNotification(t("sessionSuccessfullyDeleted"), "success");
 
           if (activeSession?.id === id) {
             dispatch(setActiveSession(null));
@@ -726,248 +717,297 @@ const TherapyChat = () => {
                     }}
                   >
                     <List disablePadding>
-                      {group.sessions.map((session, index) => (
-                        <React.Fragment key={session.id}>
-                          {index > 0 && <Divider />}
-                          <ListItem
-                            disablePadding
-                            sx={{
-                              flexDirection: "column",
-                              alignItems: "stretch",
-                            }}
-                          >
-                            <ListItemButton
-                              selected={activeSession?.id === session.id}
-                              onClick={() => {
-                                dispatch(setActiveSession(session));
-                                dispatch(GetChatMessages(session.id));
-                                setDrawerOpen(false);
-                              }}
+                      {group.sessions.map((session, index) => {
+                        const isCompleted = session.status === "Completed";
+
+                        return (
+                          <React.Fragment key={session.id}>
+                            {index > 0 && <Divider />}
+                            <ListItem
+                              disablePadding
                               sx={{
-                                py: 1.5,
-                                borderLeft:
-                                  activeSession?.id === session.id
-                                    ? `4px solid ${theme.palette.primary.main}`
-                                    : "4px solid transparent",
-                                bgcolor:
-                                  activeSession?.id === session.id
-                                    ? "rgba(25, 118, 210, 0.08)"
-                                    : "transparent",
-                                "&:hover": {
-                                  bgcolor:
-                                    activeSession?.id === session.id
-                                      ? "rgba(25, 118, 210, 0.12)"
-                                      : "rgba(0, 0, 0, 0.04)",
-                                },
+                                flexDirection: "column",
+                                alignItems: "stretch",
                               }}
                             >
-                              <ListItemText
-                                primary={
-                                  <Typography variant="body2" fontWeight={500}>
-                                    {new Date(
-                                      session.startTime
-                                    ).toLocaleTimeString("tr-TR", {
-                                      hour: "2-digit",
-                                      minute: "2-digit",
-                                    })}
-                                    {(activeSession?.id === session.id ||
-                                      session.isActive) && (
-                                      <Chip
-                                        label={t("active")}
-                                        size="small"
-                                        color="primary"
-                                        sx={{
-                                          ml: 1,
-                                          height: 18,
-                                          "& .MuiChip-label": {
-                                            px: 0.8,
-                                            py: 0,
-                                          },
-                                        }}
-                                      />
-                                    )}
-                                    {session.status === "Completed" && (
-                                      <Chip
-                                        label={t("completed")}
-                                        size="small"
-                                        color="success"
-                                        sx={{
-                                          ml: 1,
-                                          height: 18,
-                                          "& .MuiChip-label": {
-                                            px: 0.8,
-                                            py: 0,
-                                          },
-                                        }}
-                                      />
-                                    )}
-                                  </Typography>
-                                }
-                                secondary={
-                                  <>
+                              <ListItemButton
+                                selected={activeSession?.id === session.id}
+                                onClick={() => {
+                                  dispatch(setActiveSession(session));
+                                  dispatch(GetChatMessages(session.id));
+                                  setDrawerOpen(false);
+                                }}
+                                sx={{
+                                  py: 1.5,
+                                  borderLeft:
+                                    activeSession?.id === session.id
+                                      ? `4px solid ${
+                                          isCompleted
+                                            ? theme.palette.success.main
+                                            : theme.palette.primary.main
+                                        }`
+                                      : "4px solid transparent",
+                                  bgcolor: isCompleted
+                                    ? alpha(
+                                        theme.palette.success.main,
+                                        activeSession?.id === session.id
+                                          ? 0.12
+                                          : 0.05
+                                      )
+                                    : activeSession?.id === session.id
+                                    ? alpha(theme.palette.primary.main, 0.08)
+                                    : "transparent",
+                                  "&:hover": {
+                                    bgcolor: isCompleted
+                                      ? alpha(
+                                          theme.palette.success.main,
+                                          activeSession?.id === session.id
+                                            ? 0.15
+                                            : 0.08
+                                        )
+                                      : activeSession?.id === session.id
+                                      ? alpha(theme.palette.primary.main, 0.12)
+                                      : alpha(theme.palette.grey[500], 0.04),
+                                  },
+                                }}
+                              >
+                                <ListItemText
+                                  primary={
                                     <Typography
                                       variant="body2"
-                                      noWrap
-                                      color="text.secondary"
+                                      fontWeight={isCompleted ? 400 : 500}
                                       sx={{
-                                        maxWidth: "100%",
-                                        overflow: "hidden",
-                                        textOverflow: "ellipsis",
+                                        color: isCompleted
+                                          ? "text.secondary"
+                                          : "inherit",
                                       }}
                                     >
-                                      {session.lastMessage || t("noMessages")}
+                                      {new Date(
+                                        session.startTime
+                                      ).toLocaleTimeString("tr-TR", {
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                      })}
+                                      {(activeSession?.id === session.id ||
+                                        session.isActive) &&
+                                        !isCompleted && (
+                                          <Chip
+                                            label={t("active")}
+                                            size="small"
+                                            color="primary"
+                                            sx={{
+                                              ml: 1,
+                                              height: 18,
+                                              "& .MuiChip-label": {
+                                                px: 0.8,
+                                                py: 0,
+                                              },
+                                            }}
+                                          />
+                                        )}
+                                      {isCompleted && (
+                                        <Chip
+                                          label={t("completed")}
+                                          size="small"
+                                          color="success"
+                                          sx={{
+                                            ml: 1,
+                                            height: 18,
+                                            "& .MuiChip-label": {
+                                              px: 0.8,
+                                              py: 0,
+                                            },
+                                          }}
+                                        />
+                                      )}
                                     </Typography>
-                                    <Typography
-                                      variant="caption"
-                                      color="text.secondary"
-                                      sx={{
-                                        display: "flex",
-                                        alignItems: "center",
-                                        mt: 0.5,
-                                      }}
-                                    >
-                                      <Box
+                                  }
+                                  secondary={
+                                    <>
+                                      <Typography
+                                        variant="body2"
+                                        noWrap
+                                        color={
+                                          isCompleted
+                                            ? "text.disabled"
+                                            : "text.secondary"
+                                        }
+                                        sx={{
+                                          maxWidth: "100%",
+                                          overflow: "hidden",
+                                          textOverflow: "ellipsis",
+                                          fontStyle: isCompleted
+                                            ? "italic"
+                                            : "normal",
+                                        }}
+                                      >
+                                        {session.lastMessage || t("noMessages")}
+                                      </Typography>
+                                      <Typography
+                                        variant="caption"
+                                        color={
+                                          isCompleted
+                                            ? "text.disabled"
+                                            : "text.secondary"
+                                        }
                                         sx={{
                                           display: "flex",
                                           alignItems: "center",
-                                          mr: 1,
+                                          mt: 0.5,
                                         }}
                                       >
-                                        <FormatQuote
-                                          fontSize="small"
-                                          sx={{ fontSize: 16, mr: 0.5 }}
-                                        />
-                                        <Typography
-                                          variant="caption"
-                                          fontWeight={500}
+                                        <Box
+                                          sx={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            mr: 1,
+                                          }}
                                         >
-                                          {session.messageCount || 0}
-                                        </Typography>
-                                      </Box>
-                                      {t("messages")}
-                                    </Typography>
-                                  </>
-                                }
-                              />
-                            </ListItemButton>
+                                          <FormatQuote
+                                            fontSize="small"
+                                            sx={{
+                                              fontSize: 16,
+                                              mr: 0.5,
+                                              opacity: isCompleted ? 0.6 : 0.8,
+                                            }}
+                                          />
+                                          <Typography
+                                            variant="caption"
+                                            fontWeight={isCompleted ? 400 : 500}
+                                          >
+                                            {session.messageCount || 0}
+                                          </Typography>
+                                        </Box>
+                                        {t("messages")}
+                                      </Typography>
+                                    </>
+                                  }
+                                />
+                              </ListItemButton>
 
-                            {session.status !== "Completed" && (
-                              <Box
-                                sx={{
-                                  display: "flex",
-                                  justifyContent: "flex-end",
-                                  px: 2,
-                                  pb: 1,
-                                  pt: 0.5,
-                                  bgcolor: alpha(
-                                    theme.palette.background.paper,
-                                    0.6
-                                  ),
-                                  borderTop: "1px solid rgba(0,0,0,0.03)",
-                                }}
-                              >
-                                <Button
-                                  size="small"
-                                  startIcon={<CheckCircle fontSize="small" />}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleCompleteSession(session.id);
-                                  }}
+                              {!isCompleted && (
+                                <Box
                                   sx={{
-                                    mr: 1,
-                                    textTransform: "none",
-                                    color: theme.palette.success.main,
-                                    borderColor: alpha(
-                                      theme.palette.success.main,
-                                      0.5
+                                    display: "flex",
+                                    justifyContent: "flex-end",
+                                    px: 2,
+                                    pb: 1,
+                                    pt: 0.5,
+                                    bgcolor: alpha(
+                                      theme.palette.background.paper,
+                                      0.6
                                     ),
-                                    "&:hover": {
-                                      borderColor: theme.palette.success.main,
-                                      bgcolor: alpha(
+                                    borderTop: "1px solid rgba(0,0,0,0.03)",
+                                  }}
+                                >
+                                  <Button
+                                    size="small"
+                                    startIcon={<CheckCircle fontSize="small" />}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleCompleteSession(session.id);
+                                    }}
+                                    sx={{
+                                      mr: 1,
+                                      textTransform: "none",
+                                      color: theme.palette.success.main,
+                                      borderColor: alpha(
                                         theme.palette.success.main,
-                                        0.04
+                                        0.5
                                       ),
-                                    },
-                                  }}
-                                  variant="outlined"
-                                >
-                                  {t("complete")}
-                                </Button>
-                                <Button
-                                  size="small"
-                                  startIcon={<DeleteOutline fontSize="small" />}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleDeleteSession(session.id);
-                                  }}
-                                  sx={{
-                                    textTransform: "none",
-                                    color: theme.palette.error.main,
-                                    borderColor: alpha(
-                                      theme.palette.error.main,
-                                      0.5
-                                    ),
-                                    "&:hover": {
-                                      borderColor: theme.palette.error.main,
-                                      bgcolor: alpha(
+                                      "&:hover": {
+                                        borderColor: theme.palette.success.main,
+                                        bgcolor: alpha(
+                                          theme.palette.success.main,
+                                          0.04
+                                        ),
+                                      },
+                                    }}
+                                    variant="outlined"
+                                  >
+                                    {t("complete")}
+                                  </Button>
+                                  <Button
+                                    size="small"
+                                    startIcon={
+                                      <DeleteOutline fontSize="small" />
+                                    }
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDeleteSession(session.id);
+                                    }}
+                                    sx={{
+                                      textTransform: "none",
+                                      color: theme.palette.error.main,
+                                      borderColor: alpha(
                                         theme.palette.error.main,
-                                        0.04
+                                        0.5
                                       ),
-                                    },
-                                  }}
-                                  variant="outlined"
-                                >
-                                  {t("delete")}
-                                </Button>
-                              </Box>
-                            )}
+                                      "&:hover": {
+                                        borderColor: theme.palette.error.main,
+                                        bgcolor: alpha(
+                                          theme.palette.error.main,
+                                          0.04
+                                        ),
+                                      },
+                                    }}
+                                    variant="outlined"
+                                  >
+                                    {t("delete")}
+                                  </Button>
+                                </Box>
+                              )}
 
-                            {session.status === "Completed" && (
-                              <Box
-                                sx={{
-                                  display: "flex",
-                                  justifyContent: "flex-end",
-                                  px: 2,
-                                  pb: 1,
-                                  pt: 0.5,
-                                  bgcolor: alpha(
-                                    theme.palette.background.paper,
-                                    0.6
-                                  ),
-                                  borderTop: "1px solid rgba(0,0,0,0.03)",
-                                }}
-                              >
-                                <Button
-                                  size="small"
-                                  startIcon={<DeleteOutline fontSize="small" />}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleDeleteSession(session.id);
-                                  }}
+                              {isCompleted && (
+                                <Box
                                   sx={{
-                                    textTransform: "none",
-                                    color: theme.palette.error.main,
-                                    borderColor: alpha(
-                                      theme.palette.error.main,
-                                      0.5
+                                    display: "flex",
+                                    justifyContent: "flex-end",
+                                    px: 2,
+                                    pb: 1,
+                                    pt: 0.5,
+                                    bgcolor: alpha(
+                                      theme.palette.success.light,
+                                      0.05
                                     ),
-                                    "&:hover": {
-                                      borderColor: theme.palette.error.main,
-                                      bgcolor: alpha(
-                                        theme.palette.error.main,
-                                        0.04
-                                      ),
-                                    },
+                                    borderTop:
+                                      "1px solid rgba(76, 175, 80, 0.1)",
                                   }}
-                                  variant="outlined"
                                 >
-                                  {t("delete")}
-                                </Button>
-                              </Box>
-                            )}
-                          </ListItem>
-                        </React.Fragment>
-                      ))}
+                                  <Button
+                                    size="small"
+                                    startIcon={
+                                      <DeleteOutline fontSize="small" />
+                                    }
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDeleteSession(session.id);
+                                    }}
+                                    sx={{
+                                      textTransform: "none",
+                                      color: theme.palette.error.main,
+                                      borderColor: alpha(
+                                        theme.palette.error.main,
+                                        0.5
+                                      ),
+                                      "&:hover": {
+                                        borderColor: theme.palette.error.main,
+                                        bgcolor: alpha(
+                                          theme.palette.error.main,
+                                          0.04
+                                        ),
+                                      },
+                                    }}
+                                    variant="outlined"
+                                  >
+                                    {t("delete")}
+                                  </Button>
+                                </Box>
+                              )}
+                            </ListItem>
+                          </React.Fragment>
+                        );
+                      })}
                     </List>
                   </Paper>
                 </Box>
@@ -1012,7 +1052,7 @@ const TherapyChat = () => {
               startIcon={<ClearAll />}
               onClick={handleClearAllSessions}
             >
-              {t("clearAllSessions")}
+              {t("clearAllAiSessions")}
             </Button>
           )}
         </Box>

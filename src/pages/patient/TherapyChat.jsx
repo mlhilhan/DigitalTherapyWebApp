@@ -24,6 +24,9 @@ import {
   Zoom,
   Chip,
   alpha,
+  Avatar,
+  Container,
+  Grid,
 } from "@mui/material";
 import { useDispatch, useSelector } from "react-redux";
 import { useTranslation } from "react-i18next";
@@ -36,13 +39,17 @@ import {
   RestartAlt,
   DeleteOutline,
   CheckCircle,
+  Psychology,
+  Info,
+  Lock,
+  AccessTime,
 } from "@mui/icons-material";
-import ChatHeader from "../../components/chat/ChatHeader";
-import MessageSuggestions from "../../components/chat/MessageSuggestions";
-import MessageBubble from "../../components/chat/MessageBubble";
-import TypingIndicator from "../../components/chat/TypingIndicator";
-import MessageInput from "../../components/chat/MessageInput";
-import MessageMenu from "../../components/chat/MessageMenu";
+import ChatHeader from "../../components/therapyChat/ChatHeader";
+import MessageSuggestions from "../../components/therapyChat/MessageSuggestions";
+import MessageBubble from "../../components/therapyChat/MessageBubble";
+import TypingIndicator from "../../components/therapyChat/TypingIndicator";
+import MessageInput from "../../components/therapyChat/MessageInput";
+import MessageMenu from "../../components/therapyChat/MessageMenu";
 import LoadingComponent, {
   LOADING_TYPES,
 } from "../../components/common/LoadingComponent";
@@ -224,6 +231,7 @@ const TherapyChat = () => {
     const message = currentMessages.find((m) => m.id === selectedMessageId);
     if (message) {
       navigator.clipboard.writeText(message.content || message.text);
+      showNotification(t("messageCopied"), "success");
     }
     handleMenuClose();
   };
@@ -364,6 +372,205 @@ const TherapyChat = () => {
     return <LoadingComponent type={LOADING_TYPES.CHAT} />;
   }
 
+  // Hoş geldin ekranı - aktif oturum yokken görünür
+  const WelcomeScreen = () => (
+    <Container
+      maxWidth="md"
+      sx={{ py: 6, textAlign: "center", height: "100%" }}
+    >
+      <Card
+        elevation={0}
+        sx={{
+          p: 4,
+          borderRadius: 4,
+          bgcolor: "rgba(255,255,255,0.8)",
+          backdropFilter: "blur(10px)",
+        }}
+      >
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Avatar
+            sx={{
+              width: 100,
+              height: 100,
+              bgcolor: alpha(theme.palette.primary.main, 0.1),
+              color: theme.palette.primary.main,
+              mb: 3,
+              p: 2,
+              "& .MuiSvgIcon-root": {
+                fontSize: 48,
+              },
+            }}
+          >
+            <Psychology fontSize="large" />
+          </Avatar>
+
+          <Typography
+            variant="h4"
+            fontWeight={600}
+            color="primary.main"
+            gutterBottom
+          >
+            {t("welcomeToAiTherapy")}
+          </Typography>
+
+          <Typography
+            variant="h6"
+            color="text.secondary"
+            sx={{ mb: 4, maxWidth: "80%" }}
+          >
+            {t("aiTherapyIntroduction")}
+          </Typography>
+
+          <Box sx={{ mb: 4, width: "100%", maxWidth: 600 }}>
+            <Paper
+              elevation={0}
+              sx={{
+                p: 3,
+                borderRadius: 3,
+                bgcolor: alpha(theme.palette.info.main, 0.05),
+                border: `1px solid ${alpha(theme.palette.info.main, 0.2)}`,
+                display: "flex",
+                mb: 2,
+              }}
+            >
+              <Info color="info" sx={{ fontSize: 24, mr: 2, mt: 0.5 }} />
+              <Box>
+                <Typography
+                  variant="subtitle1"
+                  fontWeight={500}
+                  color="info.main"
+                  gutterBottom
+                >
+                  {t("howAiTherapyWorks")}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mb: 1 }}
+                >
+                  {t("aiTherapyExplanation")}
+                </Typography>
+              </Box>
+            </Paper>
+
+            <Grid container spacing={2} sx={{ mt: 2 }}>
+              {[
+                {
+                  icon: <Psychology />,
+                  title: t("mentalWellbeing"),
+                  description: t("mentalWellbeingDesc"),
+                },
+                {
+                  icon: <Lock />,
+                  title: t("privacy"),
+                  description: t("privacyDesc"),
+                },
+                {
+                  icon: <AccessTime />,
+                  title: t("anytime"),
+                  description: t("anytimeDesc"),
+                },
+              ].map((item, index) => (
+                <Grid item xs={12} md={4} key={index}>
+                  <Paper
+                    elevation={0}
+                    sx={{
+                      p: 2,
+                      borderRadius: 3,
+                      height: "100%",
+                      bgcolor: alpha(theme.palette.background.paper, 0.6),
+                      border: "1px solid rgba(0,0,0,0.05)",
+                      transition: "all 0.2s ease",
+                      "&:hover": {
+                        boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+                        transform: "translateY(-2px)",
+                      },
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        height: "100%",
+                      }}
+                    >
+                      <Avatar
+                        sx={{
+                          bgcolor: alpha(theme.palette.primary.main, 0.1),
+                          color: theme.palette.primary.main,
+                          mb: 2,
+                        }}
+                      >
+                        {item.icon}
+                      </Avatar>
+                      <Typography
+                        variant="subtitle1"
+                        fontWeight={600}
+                        gutterBottom
+                      >
+                        {item.title}
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        align="center"
+                      >
+                        {item.description}
+                      </Typography>
+                    </Box>
+                  </Paper>
+                </Grid>
+              ))}
+            </Grid>
+          </Box>
+
+          <Button
+            variant="contained"
+            size="large"
+            startIcon={<Add />}
+            onClick={startNewSession}
+            sx={{
+              py: 1.5,
+              px: 4,
+              borderRadius: 8,
+              textTransform: "none",
+              fontSize: "1rem",
+              fontWeight: 600,
+              boxShadow: "0 8px 20px rgba(25, 118, 210, 0.3)",
+              transition: "all 0.3s ease",
+              "&:hover": {
+                transform: "translateY(-3px)",
+                boxShadow: "0 12px 28px rgba(25, 118, 210, 0.4)",
+              },
+            }}
+          >
+            {t("startNewTherapySession")}
+          </Button>
+
+          {sessions && sessions.length > 0 && (
+            <Button
+              variant="outlined"
+              color="primary"
+              startIcon={<History />}
+              onClick={() => setDrawerOpen(true)}
+              sx={{ mt: 2, borderRadius: 8, textTransform: "none" }}
+            >
+              {t("viewPreviousSessions")}
+            </Button>
+          )}
+        </Box>
+      </Card>
+    </Container>
+  );
+
   return (
     <Box
       sx={{
@@ -398,198 +605,239 @@ const TherapyChat = () => {
             }}
           >
             <ChatHeader />
-            <Tooltip
-              title={t("sessionHistory")}
-              placement="bottom"
-              arrow
-              TransitionComponent={Zoom}
-            >
-              <IconButton
-                color="primary"
-                onClick={() => setDrawerOpen(true)}
-                aria-label={t("sessionHistory")}
-                sx={{
-                  bgcolor: "rgba(25, 118, 210, 0.08)",
-                  "&:hover": {
-                    bgcolor: "rgba(25, 118, 210, 0.14)",
-                  },
-                  transition: "all 0.2s ease",
-                }}
+            <Box sx={{ display: "flex" }}>
+              {activeSession && (
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  startIcon={<Add />}
+                  onClick={startNewSession}
+                  sx={{
+                    mr: 2,
+                    borderRadius: 8,
+                    textTransform: "none",
+                    "&:hover": {
+                      bgcolor: alpha(theme.palette.primary.main, 0.05),
+                      borderColor: theme.palette.primary.main,
+                    },
+                  }}
+                >
+                  {t("newSession")}
+                </Button>
+              )}
+              <Tooltip
+                title={t("sessionHistory")}
+                placement="bottom"
+                arrow
+                TransitionComponent={Zoom}
               >
-                <Badge badgeContent={sessions?.length || 0} color="primary">
-                  <History />
-                </Badge>
-              </IconButton>
-            </Tooltip>
+                <IconButton
+                  color="primary"
+                  onClick={() => setDrawerOpen(true)}
+                  aria-label={t("sessionHistory")}
+                  sx={{
+                    bgcolor: "rgba(25, 118, 210, 0.08)",
+                    "&:hover": {
+                      bgcolor: "rgba(25, 118, 210, 0.14)",
+                    },
+                    transition: "all 0.2s ease",
+                  }}
+                >
+                  <Badge badgeContent={sessions?.length || 0} color="primary">
+                    <History />
+                  </Badge>
+                </IconButton>
+              </Tooltip>
+            </Box>
           </Box>
         </Box>
       </Card>
-      {/* Message Suggestions */}
-      <Collapse in={showWelcomeMessage && currentMessages.length === 0}>
-        <Box sx={{ px: 2, pt: 2 }}>
-          <MessageSuggestions onSelectSuggestion={handleSuggestedMessage} />
-        </Box>
-      </Collapse>
-      {/* Chat Messages */}
-      <Paper
-        elevation={0}
-        sx={{
-          flexGrow: 1,
-          px: 2,
-          py: 1.5,
-          mx: 2,
-          mb: 2,
-          borderRadius: 3,
-          backgroundColor: "#fff",
-          overflow: "auto",
-          display: "flex",
-          flexDirection: "column",
-          boxShadow: "0 4px 20px rgba(0,0,0,0.02)",
-          border: "1px solid rgba(0,0,0,0.05)",
-          scrollBehavior: "smooth",
-        }}
-      >
-        <Box sx={{ flexGrow: 1 }}>
-          {loadingMessages && currentMessages.length === 0 && (
-            <Box sx={{ display: "flex", justifyContent: "center", my: 2 }}>
-              <TypingIndicator />
+
+      {/* Main Content */}
+      {!activeSession ? (
+        // Aktif oturum yoksa hoş geldin ekranını göster
+        <WelcomeScreen />
+      ) : (
+        // Aktif oturum varsa mesajlaşma arayüzünü göster
+        <>
+          {/* Message Suggestions */}
+          <Collapse in={showWelcomeMessage && currentMessages.length === 0}>
+            <Box sx={{ px: 2, pt: 2 }}>
+              <MessageSuggestions onSelectSuggestion={handleSuggestedMessage} />
+            </Box>
+          </Collapse>
+
+          {/* Status notification for completed sessions */}
+          {activeSession?.status === "Completed" && (
+            <Box
+              sx={{
+                mx: 2,
+                mt: 2,
+                p: 2,
+                borderRadius: 2,
+                bgcolor: alpha(theme.palette.success.main, 0.07),
+                border: "1px solid",
+                borderColor: alpha(theme.palette.success.main, 0.2),
+                display: "flex",
+                alignItems: "center",
+              }}
+            >
+              <CheckCircle color="success" sx={{ mr: 1.5, fontSize: 20 }} />
+              <Typography variant="body2" color="success.main">
+                {t("sessionCompletedInfoMessage")}
+              </Typography>
             </Box>
           )}
 
-          {currentMessages.length === 0 && !loadingMessages && (
-            <Fade in={true} timeout={800}>
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  height: "100%",
-                  flexDirection: "column",
-                  textAlign: "center",
-                  p: 3,
-                }}
-              >
-                <Box
-                  sx={{
-                    bgcolor: "rgba(25, 118, 210, 0.05)",
-                    p: 3,
-                    borderRadius: 4,
-                    mb: 2,
-                    maxWidth: "85%",
-                    border: "1px dashed rgba(25, 118, 210, 0.3)",
+          {/* Chat Messages */}
+          <Paper
+            elevation={0}
+            sx={{
+              flexGrow: 1,
+              px: 2,
+              py: 1.5,
+              mx: 2,
+              mb: 2,
+              mt: activeSession?.status === "Completed" ? 0 : 2,
+              borderRadius: 3,
+              backgroundColor: "#fff",
+              overflow: "auto",
+              display: "flex",
+              flexDirection: "column",
+              boxShadow: "0 4px 20px rgba(0,0,0,0.02)",
+              border: "1px solid rgba(0,0,0,0.05)",
+              scrollBehavior: "smooth",
+            }}
+          >
+            <Box sx={{ flexGrow: 1 }}>
+              {loadingMessages && currentMessages.length === 0 && (
+                <Box sx={{ display: "flex", justifyContent: "center", my: 2 }}>
+                  <TypingIndicator />
+                </Box>
+              )}
+
+              {currentMessages.length === 0 && !loadingMessages && (
+                <Fade in={true} timeout={800}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      height: "100%",
+                      flexDirection: "column",
+                      textAlign: "center",
+                      p: 3,
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        bgcolor: "rgba(25, 118, 210, 0.05)",
+                        p: 3,
+                        borderRadius: 4,
+                        mb: 2,
+                        maxWidth: "85%",
+                        border: "1px dashed rgba(25, 118, 210, 0.3)",
+                      }}
+                    >
+                      <FormatQuote
+                        color="primary"
+                        sx={{
+                          fontSize: 40,
+                          opacity: 0.6,
+                          mb: 1,
+                        }}
+                      />
+                      <Typography
+                        variant="h6"
+                        color="text.primary"
+                        sx={{ mb: 2, fontWeight: 500 }}
+                      >
+                        {t("welcomeToTherapy")}
+                      </Typography>
+                      <Typography
+                        variant="body1"
+                        color="text.secondary"
+                        sx={{ mb: 1 }}
+                      >
+                        {t("therapyGreeting")}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {t("therapyInstructions")}
+                      </Typography>
+                    </Box>
+
+                    <Box sx={{ mt: 2 }}>
+                      <Button
+                        variant="outlined"
+                        color="primary"
+                        startIcon={<RestartAlt />}
+                        onClick={startNewSession}
+                        sx={{
+                          borderRadius: 2,
+                          textTransform: "none",
+                          px: 2,
+                        }}
+                      >
+                        {t("startNewSession")}
+                      </Button>
+                    </Box>
+                  </Box>
+                </Fade>
+              )}
+
+              {/* Display messages in chronological order */}
+              {currentMessages.map((message, index) => (
+                <Grow
+                  in={true}
+                  key={message.id}
+                  timeout={300}
+                  style={{
+                    transformOrigin: message.isAiGenerated
+                      ? "0 0 0"
+                      : "100% 0 0",
                   }}
                 >
-                  <FormatQuote
-                    color="primary"
-                    sx={{
-                      fontSize: 40,
-                      opacity: 0.6,
-                      mb: 1,
-                    }}
-                  />
-                  <Typography
-                    variant="h6"
-                    color="text.primary"
-                    sx={{ mb: 2, fontWeight: 500 }}
-                  >
-                    {t("welcomeToTherapy")}
-                  </Typography>
-                  <Typography
-                    variant="body1"
-                    color="text.secondary"
-                    sx={{ mb: 1 }}
-                  >
-                    {t("therapyGreeting")}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {t("therapyInstructions")}
-                  </Typography>
-                </Box>
+                  <Box>
+                    <MessageBubble
+                      message={message}
+                      user={user}
+                      onMenuOpen={handleMenuOpen}
+                      isFirstInSequence={
+                        index === 0 ||
+                        currentMessages[index - 1].isAiGenerated !==
+                          message.isAiGenerated
+                      }
+                      isLastInSequence={
+                        index === currentMessages.length - 1 ||
+                        currentMessages[index + 1].isAiGenerated !==
+                          message.isAiGenerated
+                      }
+                    />
+                  </Box>
+                </Grow>
+              ))}
 
-                <Box sx={{ mt: 2 }}>
-                  <Button
-                    variant="outlined"
-                    color="primary"
-                    startIcon={<RestartAlt />}
-                    onClick={startNewSession}
-                    sx={{
-                      borderRadius: 2,
-                      textTransform: "none",
-                      px: 2,
-                    }}
-                  >
-                    {t("startNewSession")}
-                  </Button>
-                </Box>
-              </Box>
-            </Fade>
-          )}
+              {/* Typing indicator */}
+              {isTyping && <TypingIndicator />}
 
-          {/* Display messages in chronological order */}
-          {currentMessages.map((message, index) => (
-            <Grow
-              in={true}
-              key={message.id}
-              timeout={300}
-              style={{
-                transformOrigin: message.isAiGenerated ? "0 0 0" : "100% 0 0",
-              }}
-            >
-              <Box>
-                <MessageBubble
-                  message={message}
-                  user={user}
-                  onMenuOpen={handleMenuOpen}
-                  isFirstInSequence={
-                    index === 0 ||
-                    currentMessages[index - 1].isAiGenerated !==
-                      message.isAiGenerated
-                  }
-                  isLastInSequence={
-                    index === currentMessages.length - 1 ||
-                    currentMessages[index + 1].isAiGenerated !==
-                      message.isAiGenerated
-                  }
-                />
-              </Box>
-            </Grow>
-          ))}
+              {/* Scroll helper */}
+              <div ref={messagesEndRef} />
+            </Box>
+          </Paper>
 
-          {/* Typing indicator */}
-          {isTyping && <TypingIndicator />}
-
-          {/* Scroll helper */}
-          <div ref={messagesEndRef} />
-        </Box>
-      </Paper>
-
-      {activeSession?.status === "Completed" && (
-        <Box
-          sx={{
-            mx: 2,
-            mb: 2,
-            p: 2,
-            borderRadius: 2,
-            bgcolor: (theme) => alpha(theme.palette.success.main, 0.07),
-            border: "1px solid",
-            borderColor: (theme) => alpha(theme.palette.success.main, 0.2),
-            display: "flex",
-            alignItems: "center",
-          }}
-        >
-          <CheckCircle color="success" sx={{ mr: 1.5, fontSize: 20 }} />
-        </Box>
+          {/* Message Input */}
+          <Box sx={{ px: 2, pb: 2 }}>
+            <MessageInput
+              message={newMessage}
+              setMessage={setNewMessage}
+              handleSendMessage={handleSendMessage}
+              disabled={sending || !activeSession}
+              activeSession={activeSession}
+            />
+          </Box>
+        </>
       )}
 
-      {/* Message Input */}
-      <Box sx={{ px: 2, pb: 2 }}>
-        <MessageInput
-          message={newMessage}
-          setMessage={setNewMessage}
-          handleSendMessage={handleSendMessage}
-          disabled={sending || !activeSession}
-        />
-      </Box>
       {/* Message Menu */}
       <MessageMenu
         anchorEl={menuAnchorEl}
@@ -598,6 +846,7 @@ const TherapyChat = () => {
         handleCopy={copyMessage}
         handleDelete={deleteMessage}
       />
+
       {/* Error snackbar */}
       <Snackbar
         open={errorOpen}
@@ -1058,6 +1307,7 @@ const TherapyChat = () => {
         </Box>
       </Drawer>
 
+      {/* Confirmation Modal */}
       <ConfirmationModal
         open={confirmModalProps.open}
         onClose={() =>
@@ -1073,6 +1323,8 @@ const TherapyChat = () => {
         type={confirmModalProps.type}
         warningMessage={confirmModalProps.warningMessage}
       />
+
+      {/* Notification Snackbar */}
       <NotificationSnackbar
         open={notification.open}
         onClose={() => setNotification({ ...notification, open: false })}

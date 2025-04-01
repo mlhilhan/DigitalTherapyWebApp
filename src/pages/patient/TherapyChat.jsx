@@ -23,6 +23,11 @@ import {
   Tooltip,
   Zoom,
   Chip,
+  DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
 } from "@mui/material";
 import { useDispatch, useSelector } from "react-redux";
 import { useTranslation } from "react-i18next";
@@ -52,7 +57,10 @@ import {
   clearChatError,
   setActiveSession,
   clearMessages,
+  ClearAllSessions,
 } from "../../features/therapyChat/therapyChatSlice";
+import DeleteConfirmationModal from "../../components/common/DeleteConfirmationModal";
+import NotificationSnackbar from "../../components/common/NotificationSnackbar";
 
 const TherapyChat = () => {
   const { t } = useTranslation();
@@ -78,6 +86,12 @@ const TherapyChat = () => {
     loadingMessages,
     error,
   } = useSelector((state) => state.therapyChat);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [notification, setNotification] = useState({
+    open: false,
+    message: "",
+    severity: "info",
+  });
 
   useEffect(() => {
     dispatch(GetChatSessions());
@@ -204,7 +218,6 @@ const TherapyChat = () => {
   };
 
   const deleteMessage = () => {
-    // Delete message logic here
     handleMenuClose();
   };
 
@@ -214,7 +227,32 @@ const TherapyChat = () => {
     dispatch(clearChatError());
   };
 
+  const handleClearAllSessions = () => {
+    setDeleteModalOpen(true);
+  };
+
+  const handleConfirmClear = () => {
+    dispatch(ClearAllSessions())
+      .unwrap()
+      .then(() => {
+        setDrawerOpen(false);
+        showNotification(t("allAiSessionsCleared"), "success");
+      })
+      .catch((error) => {
+        showNotification(error || t("anErrorOccurred"), "error");
+      });
+  };
+
+  const showNotification = (message, severity = "info") => {
+    setNotification({
+      open: true,
+      message,
+      severity,
+    });
+  };
+
   const startNewSession = async () => {
+    debugger;
     try {
       dispatch(clearMessages());
       dispatch(setActiveSession(null));
@@ -233,7 +271,6 @@ const TherapyChat = () => {
       index === self.findIndex((s) => s.id === session.id)
   );
 
-  // Ardından bu benzersiz oturumları kullanarak gruplama yapın
   const sessionDates = uniqueSessions
     ? [
         ...new Set(
@@ -244,7 +281,6 @@ const TherapyChat = () => {
       ].sort((a, b) => new Date(b) - new Date(a))
     : [];
 
-  // Grupları oluşturun
   const groupedSessions = sessionDates.map((date) => ({
     date,
     sessions: uniqueSessions.filter(
@@ -253,27 +289,6 @@ const TherapyChat = () => {
     ),
   }));
 
-  // // Get distinct dates from sessions for grouping
-  // const sessionDates = sessions
-  //   ? [
-  //       ...new Set(
-  //         sessions.map((session) =>
-  //           new Date(session.startTime).toLocaleDateString("tr-TR")
-  //         )
-  //       ),
-  //     ].sort((a, b) => new Date(b) - new Date(a))
-  //   : [];
-
-  // // Group sessions by date
-  // const groupedSessions = sessionDates.map((date) => ({
-  //   date,
-  //   sessions: sessions.filter(
-  //     (session) =>
-  //       new Date(session.startTime).toLocaleDateString("tr-TR") === date
-  //   ),
-  // }));
-
-  // Show loading while chat initializes
   if (localLoading || loading) {
     return <LoadingComponent type={LOADING_TYPES.CHAT} />;
   }
@@ -655,7 +670,8 @@ const TherapyChat = () => {
                                       hour: "2-digit",
                                       minute: "2-digit",
                                     })}
-                                    {session.isActive && (
+                                    {(activeSession?.id === session.id ||
+                                      session.isActive) && (
                                       <Chip
                                         label={t("active")}
                                         size="small"
@@ -764,12 +780,31 @@ const TherapyChat = () => {
                 borderColor: "rgba(0, 0, 0, 0.12)",
               }}
               startIcon={<ClearAll />}
+              onClick={handleClearAllSessions}
             >
-              {t("clearAllSessions")}
+              {t("clearAllAiSessions")}
             </Button>
           )}
         </Box>
       </Drawer>
+
+      <DeleteConfirmationModal
+        open={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirm={handleConfirmClear}
+        itemId={null}
+        title={t("clearAllAiSessionsTitle")}
+        message={t("clearAllAiSessionsMessage")}
+        confirmButtonText={t("delete")}
+        cancelButtonText={t("cancel")}
+      />
+
+      <NotificationSnackbar
+        open={notification.open}
+        onClose={() => setNotification({ ...notification, open: false })}
+        message={notification.message}
+        severity={notification.severity}
+      />
     </Box>
   );
 };

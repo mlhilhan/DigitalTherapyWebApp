@@ -145,6 +145,30 @@ export const ActivateSession = createAsyncThunk(
   }
 );
 
+export const ClearAllSessions = createAsyncThunk(
+  "therapyChat/ClearAllSessions",
+  async (_, { rejectWithValue, dispatch }) => {
+    try {
+      const response = await therapyChatAPI.clearAllSessions();
+
+      if (!response.success) {
+        return rejectWithValue(response.message || "Oturumlar temizlenemedi");
+      }
+
+      await dispatch(GetChatSessions());
+
+      return response;
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        i18n.t("anUnexpectedErrorOccurred");
+
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
 const initialState = {
   activeSession: null,
   currentMessages: [],
@@ -167,8 +191,28 @@ const therapyChatSlice = createSlice({
       state.success = false;
     },
     setActiveSession: (state, action) => {
-      state.activeSession = action.payload;
-      state.currentMessages = [];
+      if (action.payload === null) {
+        state.activeSession = null;
+
+        if (state.sessions.length > 0) {
+          state.sessions = state.sessions.map((session) => ({
+            ...session,
+            isActive: false,
+          }));
+        }
+      } else {
+        state.activeSession = {
+          ...action.payload,
+          isActive: true,
+        };
+
+        if (state.sessions.length > 0) {
+          state.sessions = state.sessions.map((session) => ({
+            ...session,
+            isActive: session.id === action.payload.id,
+          }));
+        }
+      }
     },
     clearMessages: (state) => {
       state.currentMessages = [];
@@ -220,9 +264,20 @@ const therapyChatSlice = createSlice({
       })
       .addCase(GetChatSessions.fulfilled, (state, action) => {
         state.loading = false;
-        state.sessions = action.payload.sort(
-          (a, b) => new Date(b.startTime) - new Date(a.startTime)
-        );
+        if (action.payload && Array.isArray(action.payload)) {
+          const activeId =
+            state.activeSession?.id ||
+            action.payload.find((s) => s.isActive)?.id;
+
+          state.sessions = action.payload
+            .map((session) => ({
+              ...session,
+              isActive: session.id === activeId,
+            }))
+            .sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
+        } else {
+          state.sessions = [];
+        }
       })
       .addCase(GetChatSessions.rejected, (state, action) => {
         state.loading = false;
@@ -278,6 +333,22 @@ const therapyChatSlice = createSlice({
         state.success = true;
       })
       .addCase(ActivateSession.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // ClearAllSessions
+      .addCase(ClearAllSessions.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(ClearAllSessions.fulfilled, (state) => {
+        state.loading = false;
+        state.activeSession = null;
+        state.currentMessages = [];
+        state.success = true;
+      })
+      .addCase(ClearAllSessions.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });

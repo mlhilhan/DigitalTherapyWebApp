@@ -2,9 +2,7 @@ import api from "./axios";
 
 export const therapyChatAPI = {
   startSession: async (forceNew = false) => {
-    console.log("API call with payload:", { forceNew });
     const response = await api.post("/TherapyChat/StartSession", { forceNew });
-    console.log("API response:", response.data);
     return response.data;
   },
 

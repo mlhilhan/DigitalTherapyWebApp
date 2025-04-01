@@ -9,26 +9,17 @@ import PatientDashboard from "../pages/dashboard/PatientDashboard";
 import AdminDashboard from "../pages/dashboard/AdminDashboard";
 import InstitutionDashboard from "../pages/dashboard/InstitutionDashboard";
 import PsychologistDashboard from "../pages/dashboard/PsychologistDashboard";
-
-const ROLE_IDS = {
-  PATIENT: "4b41d3bc-95cb-4758-8c01-c5487707931e",
-  PSYCHOLOGIST: "40c2b39a-a133-4ba9-a97b-ce351bd101ac",
-  ADMIN: "ce6c9f4d-8b26-4971-853a-69bafe48c012",
-  INSTITUTION: "5e6ef66e-8298-4002-b765-5a794f149362",
-};
+import roles from "../config/roles";
 
 const ProtectedRoute = ({ children, allowedROLE_IDS }) => {
   const { isAuthenticated, user } = useSelector((state) => state.auth);
   const location = useLocation();
 
-  // Kullanıcı giriş yapmamışsa
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
-  // Önemli: User null ise, hemen bir yönlendirme yapmayın
   if (!user) {
-    // Kullanıcı bilgileri henüz yüklenmemiş, bekleyin
     return <div>Kullanıcı bilgileri yükleniyor...</div>;
   }
 
@@ -37,23 +28,21 @@ const ProtectedRoute = ({ children, allowedROLE_IDS }) => {
     let dashboard = "/dashboard";
 
     switch (user?.role?.roleId) {
-      case ROLE_IDS.PATIENT:
+      case roles.PATIENT:
         dashboard = "/patient-dashboard";
         break;
-      case ROLE_IDS.PSYCHOLOGIST:
+      case roles.PSYCHOLOGIST:
         dashboard = "/psychologist-dashboard";
         break;
-      case ROLE_IDS.ADMIN:
+      case roles.ADMIN:
         dashboard = "/admin-dashboard";
         break;
-      case ROLE_IDS.INSTITUTION:
+      case roles.INSTITUTION:
         dashboard = "/institution-dashboard";
         break;
     }
 
-    // Önemli: Yönlendirme döngüsünü önlemek için kontrol ekleyin
     if (location.pathname.startsWith(dashboard)) {
-      console.warn("Yönlendirme döngüsü algılandı, mevcut sayfada kalınıyor");
       return <Layout>{children}</Layout>;
     }
 
@@ -70,16 +59,16 @@ const AuthRoute = ({ children }) => {
     let dashboard = "/dashboard";
 
     switch (user?.role?.roleId) {
-      case ROLE_IDS.PATIENT:
+      case roles.PATIENT:
         dashboard = "/patient-dashboard";
         break;
-      case ROLE_IDS.PSYCHOLOGIST:
+      case roles.PSYCHOLOGIST:
         dashboard = "/psychologist-dashboard";
         break;
-      case ROLE_IDS.ADMIN:
+      case roles.ADMIN:
         dashboard = "/admin-dashboard";
         break;
-      case ROLE_IDS.INSTITUTION:
+      case roles.INSTITUTION:
         dashboard = "/institution-dashboard";
         break;
     }
@@ -121,7 +110,7 @@ const AppRoutes = () => {
       <Route
         path="/patient-dashboard/*"
         element={
-          <ProtectedRoute allowedROLE_IDS={[ROLE_IDS.PATIENT]}>
+          <ProtectedRoute allowedROLE_IDS={[roles.PATIENT]}>
             <PatientDashboard />
           </ProtectedRoute>
         }
@@ -130,7 +119,7 @@ const AppRoutes = () => {
       <Route
         path="/psychologist-dashboard/*"
         element={
-          <ProtectedRoute allowedROLE_IDS={[ROLE_IDS.PSYCHOLOGIST]}>
+          <ProtectedRoute allowedROLE_IDS={[roles.PSYCHOLOGIST]}>
             <PsychologistDashboard />
           </ProtectedRoute>
         }
@@ -139,7 +128,7 @@ const AppRoutes = () => {
       <Route
         path="/admin-dashboard/*"
         element={
-          <ProtectedRoute allowedROLE_IDS={[ROLE_IDS.ADMIN]}>
+          <ProtectedRoute allowedROLE_IDS={[roles.ADMIN]}>
             <AdminDashboard />
           </ProtectedRoute>
         }
@@ -148,7 +137,7 @@ const AppRoutes = () => {
       <Route
         path="/institution-dashboard/*"
         element={
-          <ProtectedRoute allowedROLE_IDS={[ROLE_IDS.INSTITUTION]}>
+          <ProtectedRoute allowedROLE_IDS={[roles.INSTITUTION]}>
             <InstitutionDashboard />
           </ProtectedRoute>
         }

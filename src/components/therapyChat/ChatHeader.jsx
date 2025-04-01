@@ -65,7 +65,7 @@ const ChatHeader = () => {
           </Avatar>
           <Box>
             <Typography variant="h6" fontWeight={600}>
-              {t("digitalTherapyAssistant")}
+              {t("aiName")}
             </Typography>
             <Box sx={{ display: "flex", alignItems: "center" }}>
               <Chip

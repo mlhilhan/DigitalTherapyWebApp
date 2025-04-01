@@ -23,9 +23,7 @@ const MessageBubble = ({
   const { t } = useTranslation();
   const isUserMessage = !message.isAiGenerated;
 
-  const senderName = isUserMessage
-    ? user?.firstName || t("you")
-    : t("assistant");
+  const senderName = isUserMessage ? user?.firstName || t("you") : t("aiName");
 
   const formatMessageTime = (timestamp) => {
     return format(new Date(timestamp || Date.now()), "HH:mm", {

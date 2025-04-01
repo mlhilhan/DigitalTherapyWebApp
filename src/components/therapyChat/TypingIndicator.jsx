@@ -30,7 +30,7 @@ const TypingIndicator = () => {
           boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
           transition: "all 0.2s ease-in-out",
         }}
-        aria-label={t("assistant")}
+        aria-label={t("aiName")}
       >
         <Psychology />
       </Avatar>

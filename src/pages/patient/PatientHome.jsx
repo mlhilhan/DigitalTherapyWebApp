@@ -3,7 +3,13 @@ import { Container, Grid, Box, useTheme } from "@mui/material";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { GetChatSessions } from "../../features/therapyChat/therapyChatSlice";
+import {
+  clearMessages,
+  GetChatSessions,
+  setActiveSession,
+  setDrawerOpen,
+  StartChatSession,
+} from "../../features/therapyChat/therapyChatSlice";
 import WelcomeHeader from "../../components/patientHome/WelcomeHeader";
 import FeatureGrid from "../../components/patientHome/FeatureGrid";
 import SessionStats from "../../components/patientHome/SessionStats";
@@ -54,20 +60,36 @@ const PatientHome = () => {
   const completedSessions =
     sessions?.filter((s) => s.status === "Completed")?.length || 0;
 
+  const handleStartNewSession = async () => {
+    try {
+      dispatch(clearMessages());
+      dispatch(setActiveSession(null));
+      await dispatch(StartChatSession(true)).unwrap();
+      await dispatch(GetChatSessions()).unwrap();
+
+      navigate("/patient-dashboard/therapy-chat");
+    } catch (error) {
+      console.error("Yeni oturum başlatılırken hata oluştu:", error);
+    }
+  };
+
   const features = [
     {
       title: t("newSession"),
       description: t("startNewConversation"),
       icon: "Psychology",
       color: theme.palette.primary.main,
-      action: () => navigate("/patient-dashboard/therapy-chat"),
+      action: handleStartNewSession,
     },
     {
       title: t("viewSessions"),
       description: t("continueExistingConversation"),
       icon: "History",
       color: theme.palette.secondary.main,
-      action: () => navigate("/patient-dashboard/therapy-chat"),
+      action: () => {
+        dispatch(setDrawerOpen(true));
+        navigate("/patient-dashboard/therapy-chat");
+      },
     },
     {
       title: t("dailyTips"),

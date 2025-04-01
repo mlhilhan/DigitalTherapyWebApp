@@ -130,7 +130,6 @@ export const ActivateSession = createAsyncThunk(
         return rejectWithValue(response.message || "Oturum aktifleştirilemedi");
       }
 
-      // Oturumları yeniden getir
       await dispatch(GetChatSessions());
 
       return response.data;
@@ -226,6 +225,7 @@ const initialState = {
   sending: false,
   error: null,
   success: false,
+  drawerOpen: false,
 };
 
 const therapyChatSlice = createSlice({
@@ -272,6 +272,9 @@ const therapyChatSlice = createSlice({
       if (!existingMsg) {
         state.currentMessages.push(action.payload);
       }
+    },
+    setDrawerOpen: (state, action) => {
+      state.drawerOpen = action.payload;
     },
   },
   extraReducers: (builder) => {
@@ -464,5 +467,6 @@ export const {
   setActiveSession,
   clearMessages,
   addLocalMessage,
+  setDrawerOpen,
 } = therapyChatSlice.actions;
 export default therapyChatSlice.reducer;

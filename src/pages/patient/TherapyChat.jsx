@@ -65,6 +65,7 @@ import {
   ClearAllSessions,
   CompleteSession,
   ClearAiSession,
+  setDrawerOpen,
 } from "../../features/therapyChat/therapyChatSlice";
 import NotificationSnackbar from "../../components/common/NotificationSnackbar";
 import ConfirmationModal from "../../components/common/ConfirmationModal";
@@ -81,7 +82,7 @@ const TherapyChat = () => {
   const [errorOpen, setErrorOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const messagesEndRef = useRef(null);
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  //const [drawerOpen, setDrawerOpen] = useState(false);
   const [showWelcomeMessage, setShowWelcomeMessage] = useState(true);
   const { user } = useSelector((state) => state.auth);
   const {
@@ -92,6 +93,7 @@ const TherapyChat = () => {
     sending,
     loadingMessages,
     error,
+    drawerOpen,
   } = useSelector((state) => state.therapyChat);
   const [notification, setNotification] = useState({
     open: false,
@@ -200,8 +202,8 @@ const TherapyChat = () => {
         await dispatch(GetChatSessions()).unwrap();
 
         if (drawerOpen) {
-          setDrawerOpen(false);
-          setTimeout(() => setDrawerOpen(true), 10);
+          dispatch(setDrawerOpen(false));
+          setTimeout(() => dispatch(setDrawerOpen(true)), 10);
         }
       }
 
@@ -259,7 +261,7 @@ const TherapyChat = () => {
       onConfirm: async () => {
         try {
           await dispatch(ClearAllSessions()).unwrap();
-          setDrawerOpen(false);
+          dispatch(setDrawerOpen(false));
           showNotification(t("allAiSessionsCleared"), "success");
         } catch (error) {
           showNotification(error || t("anErrorOccurred"), "error");
@@ -283,7 +285,7 @@ const TherapyChat = () => {
       await dispatch(StartChatSession(true)).unwrap();
       await dispatch(GetChatSessions()).unwrap();
       setShowWelcomeMessage(true);
-      setDrawerOpen(false);
+      dispatch(setDrawerOpen(false));
     } catch (error) {
       setErrorMessage(error.message || t("anErrorOccurred"));
       setErrorOpen(true);
@@ -552,7 +554,7 @@ const TherapyChat = () => {
               },
             }}
           >
-            {t("startNewTherapySession")}
+            {t("startNewSession")}
           </Button>
 
           {sessions && sessions.length > 0 && (
@@ -560,7 +562,7 @@ const TherapyChat = () => {
               variant="outlined"
               color="primary"
               startIcon={<History />}
-              onClick={() => setDrawerOpen(true)}
+              onClick={() => dispatch(setDrawerOpen(true))}
               sx={{ mt: 2, borderRadius: 8, textTransform: "none" }}
             >
               {t("viewPreviousSessions")}
@@ -633,7 +635,7 @@ const TherapyChat = () => {
               >
                 <IconButton
                   color="primary"
-                  onClick={() => setDrawerOpen(true)}
+                  onClick={() => dispatch(setDrawerOpen(true))}
                   aria-label={t("sessionHistory")}
                   sx={{
                     bgcolor: "rgba(25, 118, 210, 0.08)",
@@ -871,7 +873,7 @@ const TherapyChat = () => {
       <Drawer
         anchor="right"
         open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
+        onClose={() => dispatch(setDrawerOpen(false))}
         PaperProps={{
           sx: {
             width: { xs: "85%", sm: 360 },
@@ -923,7 +925,7 @@ const TherapyChat = () => {
                 TransitionComponent={Zoom}
               >
                 <IconButton
-                  onClick={() => setDrawerOpen(false)}
+                  onClick={() => dispatch(setDrawerOpen(false))}
                   sx={{
                     bgcolor: "rgba(0, 0, 0, 0.04)",
                     "&:hover": {
@@ -984,7 +986,7 @@ const TherapyChat = () => {
                                 onClick={() => {
                                   dispatch(setActiveSession(session));
                                   dispatch(GetChatMessages(session.id));
-                                  setDrawerOpen(false);
+                                  dispatch(setDrawerOpen(false));
                                 }}
                                 sx={{
                                   py: 1.5,

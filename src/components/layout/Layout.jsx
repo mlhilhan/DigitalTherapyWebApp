@@ -48,6 +48,7 @@ import {
   HelpOutlineOutlined,
   MenuOpen,
   KeyboardArrowDown,
+  Subscriptions,
 } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
@@ -131,10 +132,15 @@ const Layout = ({ children }) => {
             icon: <Chat />,
             path: `${dashboardPrefix}/therapy-chat`,
           },
+          // {
+          //   text: t("appointments"),
+          //   icon: <CalendarToday />,
+          //   path: `${dashboardPrefix}/appointments`,
+          // },
           {
-            text: t("appointments"),
-            icon: <CalendarToday />,
-            path: `${dashboardPrefix}/appointments`,
+            text: t("subscriptionPlans"),
+            icon: <Subscriptions />,
+            path: `${dashboardPrefix}/subscription-plans`,
           },
           {
             text: t("profile"),

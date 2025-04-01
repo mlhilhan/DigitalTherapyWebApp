@@ -18,6 +18,7 @@ import RecentSessions from "../../components/patientHome/RecentSessions";
 import DailyTip from "../../components/patientHome/DailyTip";
 import MoodTracker from "../../components/patientHome/MoodTracker";
 import ResourcesList from "../../components/patientHome/ResourcesList";
+import SubscriptionPlans from "../../components/patientHome/SubscriptionPlans";
 
 const PatientHome = () => {
   const { t } = useTranslation();
@@ -153,7 +154,7 @@ const PatientHome = () => {
         {/* Sağ Bölüm */}
         <Grid item xs={12} md={4}>
           {/* Günlük İpucu */}
-          <DailyTip />
+          <SubscriptionPlans currentPlan={"standard"} />
 
           {/* Duygu Durumu Takibi */}
           <MoodTracker />

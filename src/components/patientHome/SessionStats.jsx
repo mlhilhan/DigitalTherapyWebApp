@@ -18,9 +18,14 @@ const SessionStats = ({
   completedSessions,
   activeSessions,
   navigate,
+  onContinueSession,
 }) => {
   const { t } = useTranslation();
   const theme = useTheme();
+
+  const handleLastSession = () => {
+    navigate("/patient-dashboard/therapy-chat");
+  };
 
   return (
     <Paper
@@ -98,7 +103,7 @@ const SessionStats = ({
                 color="primary"
                 size="small"
                 endIcon={<ArrowForward />}
-                onClick={() => navigate("/therapy-chat")}
+                onClick={onContinueSession}
                 sx={{ mt: 1, borderRadius: 6, textTransform: "none" }}
               >
                 {t("continueSession")}

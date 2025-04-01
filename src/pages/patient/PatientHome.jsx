@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   clearMessages,
+  GetChatMessages,
   GetChatSessions,
   setActiveSession,
   setDrawerOpen,
@@ -73,6 +74,24 @@ const PatientHome = () => {
     }
   };
 
+  const handleViewAllSession = () => {
+    dispatch(setDrawerOpen(true));
+    navigate("/patient-dashboard/therapy-chat");
+  };
+
+  const handleContinueActiveSession = () => {
+    if (activeSessions.length > 0) {
+      const latestActiveSession = [...activeSessions].sort(
+        (a, b) => new Date(b.startTime) - new Date(a.startTime)
+      )[0];
+
+      dispatch(setActiveSession(latestActiveSession));
+      dispatch(GetChatMessages(latestActiveSession.id));
+
+      navigate("/patient-dashboard/therapy-chat");
+    }
+  };
+
   const features = [
     {
       title: t("newSession"),
@@ -86,10 +105,7 @@ const PatientHome = () => {
       description: t("continueExistingConversation"),
       icon: "History",
       color: theme.palette.secondary.main,
-      action: () => {
-        dispatch(setDrawerOpen(true));
-        navigate("/patient-dashboard/therapy-chat");
-      },
+      action: handleViewAllSession,
     },
     {
       title: t("dailyTips"),
@@ -122,6 +138,7 @@ const PatientHome = () => {
             completedSessions={completedSessions}
             activeSessions={activeSessions}
             navigate={navigate}
+            onContinueSession={handleContinueActiveSession}
           />
 
           {/* Son Oturumlar */}
@@ -129,6 +146,7 @@ const PatientHome = () => {
             sessions={recentSessions}
             isLoading={isLoading}
             navigate={navigate}
+            onViewAllSession={handleViewAllSession}
           />
         </Grid>
 

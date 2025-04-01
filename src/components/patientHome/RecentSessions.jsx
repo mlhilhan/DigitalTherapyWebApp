@@ -19,7 +19,12 @@ import { Psychology, Message, ArrowForward, Add } from "@mui/icons-material";
 import { useTheme } from "@mui/material/styles";
 import { useTranslation } from "react-i18next";
 
-const RecentSessions = ({ sessions, isLoading, navigate }) => {
+const RecentSessions = ({
+  sessions,
+  isLoading,
+  navigate,
+  onViewAllSession,
+}) => {
   const { t } = useTranslation();
   const theme = useTheme();
 
@@ -49,7 +54,7 @@ const RecentSessions = ({ sessions, isLoading, navigate }) => {
           variant="text"
           color="primary"
           endIcon={<ArrowForward />}
-          onClick={() => navigate("/therapy-chat")}
+          onClick={onViewAllSession}
           sx={{ textTransform: "none" }}
         >
           {t("viewAll")}

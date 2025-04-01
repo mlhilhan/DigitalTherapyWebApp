@@ -42,4 +42,11 @@ export const therapyChatAPI = {
     const response = await api.post("/TherapyChat/ClearAllAiSessions");
     return response.data;
   },
+
+  completeSession: async (sessionId) => {
+    const response = await api.post(
+      `/TherapyChat/CompleteSession/${sessionId}`
+    );
+    return response.data;
+  },
 };

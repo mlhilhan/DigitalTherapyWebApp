@@ -54,21 +54,7 @@ const MessageMenu = ({
         <ListItemText primary={t("copy")} />
       </MenuItem>
 
-      <MenuItem sx={{ py: 1.5 }}>
-        <ListItemIcon>
-          <BookmarkBorder fontSize="small" />
-        </ListItemIcon>
-        <ListItemText primary={t("save")} />
-      </MenuItem>
-
-      <MenuItem sx={{ py: 1.5 }}>
-        <ListItemIcon>
-          <Share fontSize="small" />
-        </ListItemIcon>
-        <ListItemText primary={t("share")} />
-      </MenuItem>
-
-      <Divider sx={{ my: 1 }} />
+      {/* <Divider sx={{ my: 1 }} /> */}
 
       <MenuItem onClick={handleDelete} sx={{ py: 1.5 }}>
         <ListItemIcon>

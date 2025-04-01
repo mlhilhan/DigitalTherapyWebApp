@@ -28,6 +28,7 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
+  alpha,
 } from "@mui/material";
 import { useDispatch, useSelector } from "react-redux";
 import { useTranslation } from "react-i18next";
@@ -38,6 +39,8 @@ import {
   ClearAll,
   FormatQuote,
   RestartAlt,
+  DeleteOutline,
+  CheckCircle,
 } from "@mui/icons-material";
 import ChatHeader from "../../components/chat/ChatHeader";
 import MessageSuggestions from "../../components/chat/MessageSuggestions";
@@ -58,9 +61,11 @@ import {
   setActiveSession,
   clearMessages,
   ClearAllSessions,
+  CompleteSession,
 } from "../../features/therapyChat/therapyChatSlice";
 import DeleteConfirmationModal from "../../components/common/DeleteConfirmationModal";
 import NotificationSnackbar from "../../components/common/NotificationSnackbar";
+import ConfirmationModal from "../../components/common/ConfirmationModal";
 
 const TherapyChat = () => {
   const { t } = useTranslation();
@@ -86,11 +91,22 @@ const TherapyChat = () => {
     loadingMessages,
     error,
   } = useSelector((state) => state.therapyChat);
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [notification, setNotification] = useState({
     open: false,
     message: "",
     severity: "info",
+  });
+  const [confirmModalProps, setConfirmModalProps] = useState({
+    open: false,
+    title: "",
+    message: "",
+    confirmButtonText: "",
+    cancelButtonText: "",
+    confirmColor: "primary",
+    type: "warning",
+    itemId: null,
+    warningMessage: "",
+    onConfirm: () => {},
   });
 
   useEffect(() => {
@@ -102,11 +118,8 @@ const TherapyChat = () => {
     const initChat = async () => {
       try {
         await dispatch(GetChatSessions()).unwrap();
-        if (!activeSession) {
-          await dispatch(StartChatSession()).unwrap();
-        }
       } catch (error) {
-        console.error("Failed to initialize chat:", error);
+        showNotification(error || t("anErrorOccurred"), "error");
       } finally {
         setTimeout(() => {
           setLocalLoading(false);
@@ -149,9 +162,14 @@ const TherapyChat = () => {
   };
 
   const handleSendMessage = async () => {
-    if (newMessage.trim() === "" || !activeSession) return;
+    if (
+      newMessage.trim() === "" ||
+      !activeSession ||
+      activeSession.status === "Completed"
+    ) {
+      return;
+    }
 
-    // Optimistic user message for UI
     const userMessage = {
       id: `temp-${new Date().getTime()}`,
       isAiGenerated: false,
@@ -173,8 +191,6 @@ const TherapyChat = () => {
           sessionId: activeSession?.id,
         })
       ).unwrap();
-
-      const respondedSessionId = result?.data?.sessionId;
 
       await dispatch(GetChatMessages(activeSession.id)).unwrap();
 
@@ -228,19 +244,25 @@ const TherapyChat = () => {
   };
 
   const handleClearAllSessions = () => {
-    setDeleteModalOpen(true);
-  };
-
-  const handleConfirmClear = () => {
-    dispatch(ClearAllSessions())
-      .unwrap()
-      .then(() => {
-        setDrawerOpen(false);
-        showNotification(t("allAiSessionsCleared"), "success");
-      })
-      .catch((error) => {
-        showNotification(error || t("anErrorOccurred"), "error");
-      });
+    setConfirmModalProps({
+      open: true,
+      title: t("clearAllSessions"),
+      message: t("clearAllAiSessionsMessage"),
+      confirmButtonText: t("delete"),
+      cancelButtonText: t("cancel"),
+      confirmColor: "error",
+      type: "error",
+      warningMessage: t("deleteWarningMessage"),
+      onConfirm: async () => {
+        try {
+          await dispatch(ClearAllSessions()).unwrap();
+          setDrawerOpen(false);
+          showNotification(t("allAiSessionsCleared"), "success");
+        } catch (error) {
+          showNotification(error || t("anErrorOccurred"), "error");
+        }
+      },
+    });
   };
 
   const showNotification = (message, severity = "info") => {
@@ -252,7 +274,6 @@ const TherapyChat = () => {
   };
 
   const startNewSession = async () => {
-    debugger;
     try {
       dispatch(clearMessages());
       dispatch(setActiveSession(null));
@@ -264,6 +285,65 @@ const TherapyChat = () => {
       setErrorMessage(error.message || t("anErrorOccurred"));
       setErrorOpen(true);
     }
+  };
+
+  const handleCompleteSession = (sessionId) => {
+    setConfirmModalProps({
+      open: true,
+      title: t("completeSession"),
+      message: t("completeSessionMessage"),
+      confirmButtonText: t("complete"),
+      cancelButtonText: t("cancel"),
+      confirmColor: "success",
+      type: "success",
+      warningMessage: t("completeSessionWarningMessage"),
+      itemId: sessionId,
+      onConfirm: async (id) => {
+        try {
+          await dispatch(CompleteSession(id)).unwrap();
+          showNotification(t("sessionCompleted"), "success");
+
+          await dispatch(GetChatSessions());
+
+          if (activeSession?.id === id) {
+            dispatch(GetChatMessages(id));
+          }
+        } catch (error) {
+          showNotification(error || t("anErrorOccurred"), "error");
+        }
+      },
+    });
+  };
+
+  const handleDeleteSession = async (sessionId) => {
+    setConfirmModalProps({
+      open: true,
+      title: t("deleteSession"),
+      message: t("deleteAiSessionMessage"),
+      confirmButtonText: t("delete"),
+      cancelButtonText: t("cancel"),
+      confirmColor: "error",
+      type: "error",
+      itemId: sessionId,
+      warningMessage: t("deleteWarningMessage"),
+      onConfirm: async (id) => {
+        try {
+          // Burada DeleteSession API'nizi çağırın (veya arşivleme API'si)
+          //await dispatch(ArchiveSession(id)).unwrap();
+          showNotification(t("sessionDeleted"), "success");
+
+          // Session listesini güncelle
+          await dispatch(GetChatSessions());
+
+          if (activeSession?.id === id) {
+            dispatch(setActiveSession(null));
+            dispatch(clearMessages());
+          }
+        } catch (error) {
+          showNotification(error || t("anErrorOccurred"), "error");
+        }
+      },
+    });
   };
 
   const uniqueSessions = sessions.filter(
@@ -353,14 +433,12 @@ const TherapyChat = () => {
           </Box>
         </Box>
       </Card>
-
       {/* Message Suggestions */}
       <Collapse in={showWelcomeMessage && currentMessages.length === 0}>
         <Box sx={{ px: 2, pt: 2 }}>
           <MessageSuggestions onSelectSuggestion={handleSuggestedMessage} />
         </Box>
       </Collapse>
-
       {/* Chat Messages */}
       <Paper
         elevation={0}
@@ -494,6 +572,24 @@ const TherapyChat = () => {
         </Box>
       </Paper>
 
+      {activeSession?.status === "Completed" && (
+        <Box
+          sx={{
+            mx: 2,
+            mb: 2,
+            p: 2,
+            borderRadius: 2,
+            bgcolor: (theme) => alpha(theme.palette.success.main, 0.07),
+            border: "1px solid",
+            borderColor: (theme) => alpha(theme.palette.success.main, 0.2),
+            display: "flex",
+            alignItems: "center",
+          }}
+        >
+          <CheckCircle color="success" sx={{ mr: 1.5, fontSize: 20 }} />
+        </Box>
+      )}
+
       {/* Message Input */}
       <Box sx={{ px: 2, pb: 2 }}>
         <MessageInput
@@ -503,7 +599,6 @@ const TherapyChat = () => {
           disabled={sending || !activeSession}
         />
       </Box>
-
       {/* Message Menu */}
       <MessageMenu
         anchorEl={menuAnchorEl}
@@ -512,7 +607,6 @@ const TherapyChat = () => {
         handleCopy={copyMessage}
         handleDelete={deleteMessage}
       />
-
       {/* Error snackbar */}
       <Snackbar
         open={errorOpen}
@@ -635,7 +729,13 @@ const TherapyChat = () => {
                       {group.sessions.map((session, index) => (
                         <React.Fragment key={session.id}>
                           {index > 0 && <Divider />}
-                          <ListItem disablePadding>
+                          <ListItem
+                            disablePadding
+                            sx={{
+                              flexDirection: "column",
+                              alignItems: "stretch",
+                            }}
+                          >
                             <ListItemButton
                               selected={activeSession?.id === session.id}
                               onClick={() => {
@@ -676,6 +776,21 @@ const TherapyChat = () => {
                                         label={t("active")}
                                         size="small"
                                         color="primary"
+                                        sx={{
+                                          ml: 1,
+                                          height: 18,
+                                          "& .MuiChip-label": {
+                                            px: 0.8,
+                                            py: 0,
+                                          },
+                                        }}
+                                      />
+                                    )}
+                                    {session.status === "Completed" && (
+                                      <Chip
+                                        label={t("completed")}
+                                        size="small"
+                                        color="success"
                                         sx={{
                                           ml: 1,
                                           height: 18,
@@ -735,6 +850,121 @@ const TherapyChat = () => {
                                 }
                               />
                             </ListItemButton>
+
+                            {session.status !== "Completed" && (
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  justifyContent: "flex-end",
+                                  px: 2,
+                                  pb: 1,
+                                  pt: 0.5,
+                                  bgcolor: alpha(
+                                    theme.palette.background.paper,
+                                    0.6
+                                  ),
+                                  borderTop: "1px solid rgba(0,0,0,0.03)",
+                                }}
+                              >
+                                <Button
+                                  size="small"
+                                  startIcon={<CheckCircle fontSize="small" />}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleCompleteSession(session.id);
+                                  }}
+                                  sx={{
+                                    mr: 1,
+                                    textTransform: "none",
+                                    color: theme.palette.success.main,
+                                    borderColor: alpha(
+                                      theme.palette.success.main,
+                                      0.5
+                                    ),
+                                    "&:hover": {
+                                      borderColor: theme.palette.success.main,
+                                      bgcolor: alpha(
+                                        theme.palette.success.main,
+                                        0.04
+                                      ),
+                                    },
+                                  }}
+                                  variant="outlined"
+                                >
+                                  {t("complete")}
+                                </Button>
+                                <Button
+                                  size="small"
+                                  startIcon={<DeleteOutline fontSize="small" />}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteSession(session.id);
+                                  }}
+                                  sx={{
+                                    textTransform: "none",
+                                    color: theme.palette.error.main,
+                                    borderColor: alpha(
+                                      theme.palette.error.main,
+                                      0.5
+                                    ),
+                                    "&:hover": {
+                                      borderColor: theme.palette.error.main,
+                                      bgcolor: alpha(
+                                        theme.palette.error.main,
+                                        0.04
+                                      ),
+                                    },
+                                  }}
+                                  variant="outlined"
+                                >
+                                  {t("delete")}
+                                </Button>
+                              </Box>
+                            )}
+
+                            {session.status === "Completed" && (
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  justifyContent: "flex-end",
+                                  px: 2,
+                                  pb: 1,
+                                  pt: 0.5,
+                                  bgcolor: alpha(
+                                    theme.palette.background.paper,
+                                    0.6
+                                  ),
+                                  borderTop: "1px solid rgba(0,0,0,0.03)",
+                                }}
+                              >
+                                <Button
+                                  size="small"
+                                  startIcon={<DeleteOutline fontSize="small" />}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteSession(session.id);
+                                  }}
+                                  sx={{
+                                    textTransform: "none",
+                                    color: theme.palette.error.main,
+                                    borderColor: alpha(
+                                      theme.palette.error.main,
+                                      0.5
+                                    ),
+                                    "&:hover": {
+                                      borderColor: theme.palette.error.main,
+                                      bgcolor: alpha(
+                                        theme.palette.error.main,
+                                        0.04
+                                      ),
+                                    },
+                                  }}
+                                  variant="outlined"
+                                >
+                                  {t("delete")}
+                                </Button>
+                              </Box>
+                            )}
                           </ListItem>
                         </React.Fragment>
                       ))}
@@ -782,23 +1012,27 @@ const TherapyChat = () => {
               startIcon={<ClearAll />}
               onClick={handleClearAllSessions}
             >
-              {t("clearAllAiSessions")}
+              {t("clearAllSessions")}
             </Button>
           )}
         </Box>
       </Drawer>
 
-      <DeleteConfirmationModal
-        open={deleteModalOpen}
-        onClose={() => setDeleteModalOpen(false)}
-        onConfirm={handleConfirmClear}
-        itemId={null}
-        title={t("clearAllAiSessionsTitle")}
-        message={t("clearAllAiSessionsMessage")}
-        confirmButtonText={t("delete")}
-        cancelButtonText={t("cancel")}
+      <ConfirmationModal
+        open={confirmModalProps.open}
+        onClose={() =>
+          setConfirmModalProps({ ...confirmModalProps, open: false })
+        }
+        onConfirm={confirmModalProps.onConfirm}
+        itemId={confirmModalProps.itemId}
+        title={confirmModalProps.title}
+        message={confirmModalProps.message}
+        confirmButtonText={confirmModalProps.confirmButtonText}
+        cancelButtonText={confirmModalProps.cancelButtonText}
+        confirmColor={confirmModalProps.confirmColor}
+        type={confirmModalProps.type}
+        warningMessage={confirmModalProps.warningMessage}
       />
-
       <NotificationSnackbar
         open={notification.open}
         onClose={() => setNotification({ ...notification, open: false })}

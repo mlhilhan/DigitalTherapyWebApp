@@ -35,15 +35,15 @@ const MoodEntryDialog = ({
   moodFactors,
   getMoodColor,
   getMoodLabel,
+  moodVal,
 }) => {
   const { t } = useTranslation();
-  const [moodValue, setMoodValue] = useState(3);
+  const [moodValue, setMoodValue] = useState(moodVal ? moodVal : 3);
   const [moodFactorValues, setMoodFactorValues] = useState([]);
   const [moodNotes, setMoodNotes] = useState("");
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
-
   const { error, success } = useSelector((state) => state.emotionalState);
 
   useEffect(() => {
@@ -54,7 +54,7 @@ const MoodEntryDialog = ({
       setSelectedDate(new Date(entry.date));
       setIsBookmarked(entry.isBookmarked || false);
     } else {
-      setMoodValue(3);
+      setMoodValue(moodVal ? moodVal : 3);
       setMoodFactorValues([]);
       setMoodNotes("");
       setSelectedDate(new Date());

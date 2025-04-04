@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Container, Grid, Box, useTheme } from "@mui/material";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
@@ -15,10 +15,17 @@ import WelcomeHeader from "../../components/patientHome/WelcomeHeader";
 import FeatureGrid from "../../components/patientHome/FeatureGrid";
 import SessionStats from "../../components/patientHome/SessionStats";
 import RecentSessions from "../../components/patientHome/RecentSessions";
-import DailyTip from "../../components/patientHome/DailyTip";
 import MoodTracker from "../../components/patientHome/MoodTracker";
 import ResourcesList from "../../components/patientHome/ResourcesList";
 import SubscriptionPlans from "../../components/patientHome/SubscriptionPlans";
+import MoodEntryDialog from "../../components/mood/MoodEntryDialog";
+import {
+  getMoodColor,
+  MOOD_FACTORS,
+  MOOD_LEVELS,
+} from "../../components/mood/utils/moodUtil";
+import { CreateEmotionalState } from "../../features/emotionalState/emotionalStateSlice";
+import NotificationSnackbar from "../../components/common/NotificationSnackbar";
 
 const PatientHome = () => {
   const { t } = useTranslation();
@@ -30,6 +37,13 @@ const PatientHome = () => {
   const { profile } = useSelector((state) => state.profile);
   const { sessions } = useSelector((state) => state.therapyChat);
   const [patientFullName, setPatientFullName] = useState("");
+  const [openMoodDialog, setOpenMoodDialog] = useState(false);
+  const [selectedMoodValue, setSelectedMoodValue] = useState(null);
+  const [notification, setNotification] = useState({
+    open: false,
+    message: "",
+    severity: "info",
+  });
 
   useEffect(() => {
     const loadData = async () => {
@@ -53,6 +67,24 @@ const PatientHome = () => {
       setPatientFullName(fullName);
     }
   }, [profile]);
+
+  const getMoodLabel = useCallback(
+    (moodLevel) => {
+      const mood = Object.values(MOOD_LEVELS).find(
+        (m) => m.value === moodLevel
+      );
+      return mood ? t(mood.label) : t(MOOD_LEVELS.NEUTRAL.label);
+    },
+    [t]
+  );
+
+  const showNotification = (message, severity = "info") => {
+    setNotification({
+      open: true,
+      message,
+      severity,
+    });
+  };
 
   const activeSessions = sessions?.filter((s) => s.isActive) || [];
   const recentSessions = [...(sessions || [])]
@@ -91,6 +123,23 @@ const PatientHome = () => {
 
       navigate("/patient-dashboard/therapy-chat");
     }
+  };
+
+  const handleTrackMood = (moodValue) => {
+    setSelectedMoodValue(moodValue);
+    setOpenMoodDialog(true);
+  };
+
+  const handleSaveMoodEntry = (formData) => {
+    dispatch(CreateEmotionalState(formData))
+      .unwrap()
+      .then(() => {
+        setOpenMoodDialog(false);
+        showNotification(t("moodRecordWasSavedSuccessfully"), "success");
+      })
+      .catch((error) => {
+        showNotification(error, "error");
+      });
   };
 
   const features = [
@@ -153,16 +202,40 @@ const PatientHome = () => {
 
         {/* Sağ Bölüm */}
         <Grid item xs={12} md={4}>
-          {/* Günlük İpucu */}
+          {/* Subscription Plans */}
           <SubscriptionPlans currentPlan={"standard"} />
 
           {/* Duygu Durumu Takibi */}
-          <MoodTracker />
+          <MoodTracker
+            onTrackMood={handleTrackMood}
+            initialMoodValue={selectedMoodValue}
+          />
 
           {/* Kaynaklar Listesi */}
           <ResourcesList />
         </Grid>
       </Grid>
+
+      {openMoodDialog && (
+        <MoodEntryDialog
+          open={openMoodDialog}
+          entry={null}
+          onClose={() => setOpenMoodDialog(false)}
+          onSave={handleSaveMoodEntry}
+          moodLevels={MOOD_LEVELS}
+          moodFactors={MOOD_FACTORS}
+          getMoodColor={getMoodColor}
+          getMoodLabel={getMoodLabel}
+          moodVal={selectedMoodValue}
+        />
+      )}
+
+      <NotificationSnackbar
+        open={notification.open}
+        onClose={() => setNotification({ ...notification, open: false })}
+        message={notification.message}
+        severity={notification.severity}
+      />
     </Container>
   );
 };

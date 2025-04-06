@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+// src/features/dailyTip/DailyTips.jsx
+import React, { useState, useEffect } from "react";
 import {
   Container,
   Typography,
@@ -11,39 +12,88 @@ import {
   alpha,
   Card,
   CardContent,
+  Alert,
+  CircularProgress,
 } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@mui/material/styles";
 import { TipsAndUpdates } from "@mui/icons-material";
-import TipCard from "../../components/dailyTip/TipCard";
+import { useDispatch, useSelector } from "react-redux";
 import {
-  CATEGORIES,
-  getTipOfTheDay,
-  TIPS_DATA,
-} from "../../components/dailyTip/utils/dailyTipUtil";
+  GetCategories,
+  GetAllTips,
+  GetTipsByCategory,
+  GetTipOfTheDay,
+} from "../../features/dailyTip/dailyTipSlice";
+import TipCard from "../../components/dailyTip/TipCard";
+import { getCategoryIcon } from "../../components/dailyTip/utils/dailyTipUtil";
 
 const DailyTips = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const theme = useTheme();
+  const dispatch = useDispatch();
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedTab, setSelectedTab] = useState(0);
 
+  // Redux state'inden verileri al
+  const { categories, tips, tipOfTheDay, loading, error } = useSelector(
+    (state) => state.dailyTip
+  );
+
+  // Sayfa yüklendiğinde kategorileri, tüm ipuçlarını ve günün ipucunu getir
+  useEffect(() => {
+    const currentLang = i18n.language || "en";
+    dispatch(GetCategories(currentLang));
+    dispatch(GetAllTips(currentLang));
+    dispatch(GetTipOfTheDay(currentLang));
+  }, [dispatch, i18n.language]);
+
+  // Kategori değiştiğinde ilgili ipuçlarını getir
+  useEffect(() => {
+    const currentLang = i18n.language || "en";
+    if (selectedCategory === "all") {
+      dispatch(GetAllTips(currentLang));
+    } else {
+      dispatch(
+        GetTipsByCategory({
+          categoryKey: selectedCategory,
+          languageCode: currentLang,
+        })
+      );
+    }
+  }, [dispatch, selectedCategory, i18n.language]);
+
   const handleCategoryChange = (category) => {
     setSelectedCategory(category);
+    // Tab'ı da güncelle (mobil görünüm için)
+    const categoryIndex = categories.findIndex(
+      (cat) => cat.categoryKey === category
+    );
+    if (categoryIndex !== -1 || category === "all") {
+      setSelectedTab(category === "all" ? 0 : categoryIndex + 1);
+    }
   };
 
   const handleTabChange = (event, newValue) => {
     setSelectedTab(newValue);
-    const categoryIds = CATEGORIES.map((cat) => cat.id);
-    setSelectedCategory(categoryIds[newValue]);
+    // Kategori ID'sini de güncelle (Kategoriler + "all" seçeneği)
+    const allCategories = [{ categoryKey: "all" }, ...categories];
+    setSelectedCategory(allCategories[newValue]?.categoryKey || "all");
   };
 
-  const filteredTips = TIPS_DATA.filter(
-    (tip) => selectedCategory === "all" || tip.category === selectedCategory
-  );
+  // Tüm kategorileri içeren bir dizi oluştur (mobil görünüm için)
+  const allCategoriesWithAll = [
+    { id: "all", label: "allTips", icon: <TipsAndUpdates /> },
+    ...categories.map((category) => ({
+      id: category.categoryKey,
+      label: category.name,
+      icon: getCategoryIcon(category.categoryKey),
+    })),
+  ];
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
+      {/* Başlık ve Açıklama */}
       <Box sx={{ mb: 5, textAlign: "center" }}>
         <Typography
           variant="h4"
@@ -69,34 +119,51 @@ const DailyTips = () => {
         </Typography>
       </Box>
 
-      <Card
-        elevation={0}
-        sx={{
-          mb: 5,
-          borderRadius: 4,
-          background: `linear-gradient(135deg, ${alpha(
-            theme.palette.warning.light,
-            0.4
-          )}, ${alpha(theme.palette.warning.main, 0.2)})`,
-          border: `1px solid ${alpha(theme.palette.warning.main, 0.2)}`,
-          overflow: "hidden",
-        }}
-      >
-        <CardContent sx={{ p: 3 }}>
-          <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-            <TipsAndUpdates sx={{ mr: 1, color: theme.palette.warning.main }} />
-            <Typography
-              variant="h6"
-              fontWeight={600}
-              color={theme.palette.warning.main}
-            >
-              {t("tipOfTheDay")}
-            </Typography>
-          </Box>
-          <TipCard tip={getTipOfTheDay()} featured={true} theme={theme} t={t} />
-        </CardContent>
-      </Card>
+      {/* Hata mesajı */}
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {error}
+        </Alert>
+      )}
 
+      {/* Günün İpucu */}
+      {loading && !tipOfTheDay ? (
+        <Box sx={{ display: "flex", justifyContent: "center", my: 5 }}>
+          <CircularProgress />
+        </Box>
+      ) : tipOfTheDay ? (
+        <Card
+          elevation={0}
+          sx={{
+            mb: 5,
+            borderRadius: 4,
+            background: `linear-gradient(135deg, ${alpha(
+              theme.palette.warning.light,
+              0.4
+            )}, ${alpha(theme.palette.warning.main, 0.2)})`,
+            border: `1px solid ${alpha(theme.palette.warning.main, 0.2)}`,
+            overflow: "hidden",
+          }}
+        >
+          <CardContent sx={{ p: 3 }}>
+            <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+              <TipsAndUpdates
+                sx={{ mr: 1, color: theme.palette.warning.main }}
+              />
+              <Typography
+                variant="h6"
+                fontWeight={600}
+                color={theme.palette.warning.main}
+              >
+                {t("tipOfTheDay")}
+              </Typography>
+            </Box>
+            <TipCard tip={tipOfTheDay} featured={true} />
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {/* Mobil için Kategori Sekmeleri */}
       <Box
         sx={{
           borderBottom: 1,
@@ -113,10 +180,10 @@ const DailyTips = () => {
           allowScrollButtonsMobile
           aria-label="tip categories tabs"
         >
-          {CATEGORIES.map((category, index) => (
+          {allCategoriesWithAll.map((category) => (
             <Tab
               key={category.id}
-              label={t(category.label)}
+              label={category.id === "all" ? t(category.label) : category.label}
               icon={category.icon}
               iconPosition="start"
             />
@@ -124,6 +191,7 @@ const DailyTips = () => {
         </Tabs>
       </Box>
 
+      {/* Masaüstü için Kategori Chip'leri */}
       <Box
         sx={{
           display: { xs: "none", md: "flex" },
@@ -132,14 +200,27 @@ const DailyTips = () => {
           mb: 4,
         }}
       >
-        {CATEGORIES.map((category) => (
+        <Chip
+          icon={<TipsAndUpdates />}
+          label={t("allTips")}
+          onClick={() => handleCategoryChange("all")}
+          color={selectedCategory === "all" ? "primary" : "default"}
+          variant={selectedCategory === "all" ? "filled" : "outlined"}
+          sx={{ m: 0.5 }}
+        />
+
+        {categories.map((category) => (
           <Chip
             key={category.id}
-            icon={category.icon}
-            label={t(category.label)}
-            onClick={() => handleCategoryChange(category.id)}
-            color={selectedCategory === category.id ? "primary" : "default"}
-            variant={selectedCategory === category.id ? "filled" : "outlined"}
+            icon={getCategoryIcon(category.categoryKey)}
+            label={category.name}
+            onClick={() => handleCategoryChange(category.categoryKey)}
+            color={
+              selectedCategory === category.categoryKey ? "primary" : "default"
+            }
+            variant={
+              selectedCategory === category.categoryKey ? "filled" : "outlined"
+            }
             sx={{ m: 0.5 }}
           />
         ))}
@@ -147,13 +228,26 @@ const DailyTips = () => {
 
       <Divider sx={{ mb: 4 }} />
 
-      <Grid container spacing={3}>
-        {filteredTips.map((tip) => (
-          <Grid item xs={12} sm={6} md={4} key={tip.id}>
-            <TipCard tip={tip} theme={theme} t={t} />
-          </Grid>
-        ))}
-      </Grid>
+      {/* İpuçları Grid'i */}
+      {loading && tips.length === 0 ? (
+        <Box sx={{ display: "flex", justifyContent: "center", my: 5 }}>
+          <CircularProgress />
+        </Box>
+      ) : (
+        <Grid container spacing={3}>
+          {tips.length > 0 ? (
+            tips.map((tip) => (
+              <Grid item xs={12} sm={6} md={4} key={tip.id}>
+                <TipCard tip={tip} />
+              </Grid>
+            ))
+          ) : (
+            <Grid item xs={12}>
+              <Alert severity="info">{t("noTipsFoundForCategory")}</Alert>
+            </Grid>
+          )}
+        </Grid>
+      )}
     </Container>
   );
 };

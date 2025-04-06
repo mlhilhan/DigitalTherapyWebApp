@@ -19,23 +19,30 @@ import {
   BookmarkBorder,
   Share,
 } from "@mui/icons-material";
-import { CATEGORIES } from "./utils/dailyTipUtil";
+import { useDispatch } from "react-redux";
+import { ToggleBookmark } from "../../features/dailyTip/dailyTipSlice";
+import { useTranslation } from "react-i18next";
+import { useTheme } from "@mui/material/styles";
+import { getCategoryIcon } from "./utils/dailyTipUtil";
 
-const TipCard = ({ tip, featured = false, theme, t }) => {
+const TipCard = ({ tip, featured = false }) => {
   const [expanded, setExpanded] = useState(featured);
-  const [bookmarked, setBookmarked] = useState(false);
+  const { t } = useTranslation();
+  const theme = useTheme();
+  const dispatch = useDispatch();
 
   const handleExpandClick = () => {
     setExpanded(!expanded);
   };
 
-  const handleBookmarkClick = () => {
-    setBookmarked(!bookmarked);
+  const handleBookmarkClick = (e) => {
+    e.stopPropagation();
+    dispatch(ToggleBookmark(tip.id));
   };
 
-  const getCategoryIcon = () => {
-    return tip.icon;
-  };
+  if (!tip) {
+    return null;
+  }
 
   return (
     <Card
@@ -83,45 +90,46 @@ const TipCard = ({ tip, featured = false, theme, t }) => {
                 mr: 2,
               }}
             >
-              {getCategoryIcon()}
+              {tip.category && getCategoryIcon(tip.category.categoryKey)}
             </Box>
             <Box>
               <Typography variant="h6" fontWeight={600} gutterBottom>
-                {t(tip.title)}
+                {tip.title}
               </Typography>
-              <Chip
-                label={t(
-                  CATEGORIES.find((c) => c.id === tip.category)?.label ||
-                    "allTips"
-                )}
-                size="small"
-                color="primary"
-                variant="outlined"
-                sx={{ height: 22, fontSize: "0.75rem" }}
-              />
+              {tip.category && (
+                <Chip
+                  label={tip.category.name}
+                  size="small"
+                  color="primary"
+                  variant="outlined"
+                  sx={{ height: 22, fontSize: "0.75rem" }}
+                />
+              )}
             </Box>
           </Box>
           <IconButton
             onClick={handleBookmarkClick}
             size="small"
             sx={{
-              color: bookmarked ? theme.palette.primary.main : "text.secondary",
+              color: tip.isBookmarked
+                ? theme.palette.primary.main
+                : "text.secondary",
             }}
-            aria-label={bookmarked ? "remove bookmark" : "bookmark"}
+            aria-label={tip.isBookmarked ? "remove bookmark" : "bookmark"}
           >
-            {bookmarked ? <Bookmark /> : <BookmarkBorder />}
+            {tip.isBookmarked ? <Bookmark /> : <BookmarkBorder />}
           </IconButton>
         </Box>
 
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          {t(tip.shortDescription)}
+          {tip.shortDescription}
         </Typography>
 
         <Collapse in={expanded} timeout="auto" unmountOnExit>
           <Box sx={{ mt: 2, mb: 2 }}>
             <Divider sx={{ mb: 2 }} />
             <Typography variant="body2" paragraph>
-              {t(tip.content)}
+              {tip.content}
             </Typography>
             {featured && (
               <Button

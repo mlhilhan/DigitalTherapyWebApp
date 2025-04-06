@@ -4,6 +4,7 @@ import profileReducer from "../features/profile/profileSlice";
 import psychologistProfileReducer from "../features/profile/psychologistProfileSlice";
 import emotionalStateReducer from "../features/emotionalState/emotionalStateSlice";
 import therapyChatReducer from "../features/therapyChat/therapyChatSlice";
+import dailyTipReducer from "../features/dailyTip/dailyTipSlice";
 
 export const store = configureStore({
   reducer: {
@@ -12,6 +13,7 @@ export const store = configureStore({
     psychologist: psychologistProfileReducer,
     emotionalState: emotionalStateReducer,
     therapyChat: therapyChatReducer,
+    dailyTip: dailyTipReducer,
   },
 });
 

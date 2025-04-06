@@ -162,7 +162,7 @@ const PatientHome = () => {
       description: t("mentalHealthTips"),
       icon: "TipsAndUpdates",
       color: theme.palette.warning.main,
-      action: () => {},
+      action: () => navigate("/patient-dashboard/daily-tips"),
     },
     {
       title: t("moodTracker"),

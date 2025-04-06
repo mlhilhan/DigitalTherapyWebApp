@@ -25,7 +25,12 @@ import { useTranslation } from "react-i18next";
 import { useTheme } from "@mui/material/styles";
 import { getCategoryIcon } from "./utils/dailyTipUtil";
 
-const TipCard = ({ tip, featured = false }) => {
+const TipCard = ({
+  tip,
+  featured = false,
+  onBookmarkSuccess,
+  onBookmarkError,
+}) => {
   const [expanded, setExpanded] = useState(featured);
   const { t } = useTranslation();
   const theme = useTheme();
@@ -37,7 +42,16 @@ const TipCard = ({ tip, featured = false }) => {
 
   const handleBookmarkClick = (e) => {
     e.stopPropagation();
-    dispatch(ToggleBookmark(tip.id));
+    dispatch(ToggleBookmark(tip.id))
+      .unwrap()
+      .then(() => {
+        onBookmarkSuccess?.(
+          tip.isBookmarked ? t("bookmarkRemoved") : t("bookmarkAdded")
+        );
+      })
+      .catch((error) => {
+        onBookmarkError?.(error.message || t("bookmarkError"));
+      });
   };
 
   if (!tip) {

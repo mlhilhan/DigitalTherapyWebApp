@@ -350,6 +350,7 @@
   "noTipsFoundForCategory": "Bu kategori için ipucu bulunamadı.",
   "bookmarkAdded": "İpucu yer işaretlerine eklendi.",
   "bookmarkRemoved": "İpucu yer işaretlerinden kaldırıldı.",
+  "bookmarkError": "İpucu yer işaretlerine eklenirken bir hata oluştu.",
   "errorLoadingTips": "İpuçları yüklenirken bir hata oluştu.",
   "errorLoadingCategories": "Kategoriler yüklenirken bir hata oluştu.",
   "tipNotFound": "İpucu bulunamadı.",

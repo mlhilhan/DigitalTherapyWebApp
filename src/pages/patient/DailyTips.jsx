@@ -1,4 +1,3 @@
-// src/features/dailyTip/DailyTips.jsx
 import React, { useState, useEffect } from "react";
 import {
   Container,
@@ -27,6 +26,7 @@ import {
 } from "../../features/dailyTip/dailyTipSlice";
 import TipCard from "../../components/dailyTip/TipCard";
 import { getCategoryIcon } from "../../components/dailyTip/utils/dailyTipUtil";
+import NotificationSnackbar from "../../components/common/NotificationSnackbar";
 
 const DailyTips = () => {
   const { t, i18n } = useTranslation();
@@ -34,13 +34,15 @@ const DailyTips = () => {
   const dispatch = useDispatch();
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedTab, setSelectedTab] = useState(0);
-
-  // Redux state'inden verileri al
+  const [notification, setNotification] = useState({
+    open: false,
+    message: "",
+    severity: "info",
+  });
   const { categories, tips, tipOfTheDay, loading, error } = useSelector(
     (state) => state.dailyTip
   );
 
-  // Sayfa yüklendiğinde kategorileri, tüm ipuçlarını ve günün ipucunu getir
   useEffect(() => {
     const currentLang = i18n.language || "en";
     dispatch(GetCategories(currentLang));
@@ -48,7 +50,6 @@ const DailyTips = () => {
     dispatch(GetTipOfTheDay(currentLang));
   }, [dispatch, i18n.language]);
 
-  // Kategori değiştiğinde ilgili ipuçlarını getir
   useEffect(() => {
     const currentLang = i18n.language || "en";
     if (selectedCategory === "all") {
@@ -65,7 +66,6 @@ const DailyTips = () => {
 
   const handleCategoryChange = (category) => {
     setSelectedCategory(category);
-    // Tab'ı da güncelle (mobil görünüm için)
     const categoryIndex = categories.findIndex(
       (cat) => cat.categoryKey === category
     );
@@ -76,12 +76,18 @@ const DailyTips = () => {
 
   const handleTabChange = (event, newValue) => {
     setSelectedTab(newValue);
-    // Kategori ID'sini de güncelle (Kategoriler + "all" seçeneği)
     const allCategories = [{ categoryKey: "all" }, ...categories];
     setSelectedCategory(allCategories[newValue]?.categoryKey || "all");
   };
 
-  // Tüm kategorileri içeren bir dizi oluştur (mobil görünüm için)
+  const showNotification = (message, severity = "info") => {
+    setNotification({
+      open: true,
+      message,
+      severity,
+    });
+  };
+
   const allCategoriesWithAll = [
     { id: "all", label: "allTips", icon: <TipsAndUpdates /> },
     ...categories.map((category) => ({
@@ -93,7 +99,6 @@ const DailyTips = () => {
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
-      {/* Başlık ve Açıklama */}
       <Box sx={{ mb: 5, textAlign: "center" }}>
         <Typography
           variant="h4"
@@ -119,14 +124,12 @@ const DailyTips = () => {
         </Typography>
       </Box>
 
-      {/* Hata mesajı */}
       {error && (
         <Alert severity="error" sx={{ mb: 3 }}>
           {error}
         </Alert>
       )}
 
-      {/* Günün İpucu */}
       {loading && !tipOfTheDay ? (
         <Box sx={{ display: "flex", justifyContent: "center", my: 5 }}>
           <CircularProgress />
@@ -158,7 +161,14 @@ const DailyTips = () => {
                 {t("tipOfTheDay")}
               </Typography>
             </Box>
-            <TipCard tip={tipOfTheDay} featured={true} />
+            <TipCard
+              tip={tipOfTheDay}
+              featured={true}
+              onBookmarkSuccess={(message) =>
+                showNotification(message, "success")
+              }
+              onBookmarkError={(message) => showNotification(message, "error")}
+            />
           </CardContent>
         </Card>
       ) : null}
@@ -228,7 +238,6 @@ const DailyTips = () => {
 
       <Divider sx={{ mb: 4 }} />
 
-      {/* İpuçları Grid'i */}
       {loading && tips.length === 0 ? (
         <Box sx={{ display: "flex", justifyContent: "center", my: 5 }}>
           <CircularProgress />
@@ -238,7 +247,15 @@ const DailyTips = () => {
           {tips.length > 0 ? (
             tips.map((tip) => (
               <Grid item xs={12} sm={6} md={4} key={tip.id}>
-                <TipCard tip={tip} />
+                <TipCard
+                  tip={tip}
+                  onBookmarkSuccess={(message) =>
+                    showNotification(message, "success")
+                  }
+                  onBookmarkError={(message) =>
+                    showNotification(message, "error")
+                  }
+                />
               </Grid>
             ))
           ) : (
@@ -248,6 +265,13 @@ const DailyTips = () => {
           )}
         </Grid>
       )}
+
+      <NotificationSnackbar
+        open={notification.open}
+        onClose={() => setNotification({ ...notification, open: false })}
+        message={notification.message}
+        severity={notification.severity}
+      />
     </Container>
   );
 };

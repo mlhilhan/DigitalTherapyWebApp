@@ -143,21 +143,24 @@ export const GetBookmarkedTips = createAsyncThunk(
 
 export const ToggleBookmark = createAsyncThunk(
   "dailyTip/ToggleBookmark",
-  async (id, { rejectWithValue, dispatch }) => {
+  async (id, { rejectWithValue }) => {
     try {
       const response = await dailyTipAPI.toggleBookmark(id);
 
       if (!response.success) {
-        return rejectWithValue(response.message || "Yer imi güncellenemedi");
+        return rejectWithValue(response.message || "Bookmark operation failed");
       }
 
-      return response.data;
+      return {
+        id,
+        isBookmarked: response.isBookmarked,
+        message: response.message,
+      };
     } catch (error) {
       const errorMessage =
         error.response?.data?.message ||
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
-
       return rejectWithValue(errorMessage);
     }
   }
@@ -413,18 +416,32 @@ const dailyTipSlice = createSlice({
         state.loading = false;
         state.success = true;
 
-        if (state.currentTip && state.currentTip.id === action.meta.arg) {
-          state.currentTip.isBookmarked = action.payload.isBookmarked;
+        const { id, isBookmarked } = action.payload;
+
+        if (state.currentTip && state.currentTip.id === id) {
+          state.currentTip.isBookmarked = isBookmarked;
         }
 
         state.tips = state.tips.map((tip) =>
-          tip.id === action.meta.arg
-            ? { ...tip, isBookmarked: action.payload.isBookmarked }
-            : tip
+          tip.id === id ? { ...tip, isBookmarked } : tip
         );
 
-        if (state.tipOfTheDay && state.tipOfTheDay.id === action.meta.arg) {
-          state.tipOfTheDay.isBookmarked = action.payload.isBookmarked;
+        if (state.tipOfTheDay && state.tipOfTheDay.id === id) {
+          state.tipOfTheDay.isBookmarked = isBookmarked;
+        }
+
+        if (isBookmarked) {
+          const existingTip = state.bookmarkedTips.find((tip) => tip.id === id);
+          if (!existingTip) {
+            const tipToAdd = state.tips.find((tip) => tip.id === id);
+            if (tipToAdd) {
+              state.bookmarkedTips.push(tipToAdd);
+            }
+          }
+        } else {
+          state.bookmarkedTips = state.bookmarkedTips.filter(
+            (tip) => tip.id !== id
+          );
         }
       })
       .addCase(ToggleBookmark.rejected, (state, action) => {

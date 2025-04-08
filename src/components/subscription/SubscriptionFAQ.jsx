@@ -15,7 +15,6 @@ const SubscriptionFAQ = () => {
   const { t } = useTranslation();
   const theme = useTheme();
 
-  // Define FAQ items
   const faqItems = [
     {
       question: t("canIChangeMyPlanLater"),

@@ -32,7 +32,10 @@ const PaymentDialog = ({
   const theme = useTheme();
   const [paymentMethod, setPaymentMethod] = useState("creditCard");
 
-  // Payment methods
+  const fullName = profile
+    ? `${profile.firstName || ""} ${profile.lastName || ""}`.trim()
+    : "";
+
   const paymentMethods = [
     { value: "creditCard", label: t("creditCard") },
     { value: "paypal", label: "PayPal" },
@@ -40,140 +43,141 @@ const PaymentDialog = ({
   ];
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog
+      open={open}
+      onClose={isLoading ? undefined : onClose}
+      maxWidth="sm"
+      fullWidth
+    >
       <DialogTitle>
         <Typography variant="h6" fontWeight="bold">
-          {t("subscribeToThePlan", { plan: planName })}
+          {t("subscribeToThePlan", { plan: planName || t("selectedPlan") })}
         </Typography>
       </DialogTitle>
 
       <DialogContent dividers>
-        {selectedPlan && (
-          <Grid container spacing={3}>
+        <Grid container spacing={3}>
+          <Grid item xs={12}>
+            <Typography variant="subtitle1" gutterBottom>
+              {t("paymentDetails")}
+            </Typography>
+          </Grid>
+
+          <Grid item xs={12}>
+            <TextField
+              label={t("fullName")}
+              fullWidth
+              defaultValue={fullName}
+            />
+          </Grid>
+
+          <Grid item xs={12}>
+            <TextField
+              select
+              label={t("paymentMethod")}
+              value={paymentMethod}
+              onChange={(e) => setPaymentMethod(e.target.value)}
+              fullWidth
+            >
+              {paymentMethods.map((option) => (
+                <MenuItem key={option.value} value={option.value}>
+                  {option.label}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Grid>
+
+          {paymentMethod === "creditCard" && (
+            <>
+              <Grid item xs={12}>
+                <TextField
+                  label={t("cardNumber")}
+                  fullWidth
+                  placeholder="**** **** **** ****"
+                />
+              </Grid>
+              <Grid item xs={6}>
+                <TextField
+                  label={t("expirationDate")}
+                  fullWidth
+                  placeholder="MM/YY"
+                />
+              </Grid>
+              <Grid item xs={6}>
+                <TextField label="CVC" fullWidth placeholder="***" />
+              </Grid>
+            </>
+          )}
+
+          {paymentMethod === "paypal" && (
             <Grid item xs={12}>
-              <Typography variant="subtitle1" gutterBottom>
-                {t("paymentDetails")}
+              <Alert severity="info">{t("youWillBeRedirectedToPayPal")}</Alert>
+            </Grid>
+          )}
+
+          {paymentMethod === "bankTransfer" && (
+            <Grid item xs={12}>
+              <Alert severity="info">
+                {t("bankDetailsWillBeSentToYourEmail")}
+              </Alert>
+            </Grid>
+          )}
+
+          <Grid item xs={12}>
+            <Box
+              sx={{
+                backgroundColor: alpha(theme.palette.info.main, 0.1),
+                p: 2,
+                borderRadius: 1,
+              }}
+            >
+              <Typography variant="subtitle2" gutterBottom>
+                {t("subscriptionSummary")}
               </Typography>
-            </Grid>
 
-            <Grid item xs={12}>
-              <TextField
-                label={t("fullName")}
-                fullWidth
-                defaultValue={`${profile?.firstName || ""} ${
-                  profile?.lastName || ""
-                }`}
-              />
-            </Grid>
-
-            <Grid item xs={12}>
-              <TextField
-                select
-                label={t("paymentMethod")}
-                value={paymentMethod}
-                onChange={(e) => setPaymentMethod(e.target.value)}
-                fullWidth
-              >
-                {paymentMethods.map((option) => (
-                  <MenuItem key={option.value} value={option.value}>
-                    {option.label}
-                  </MenuItem>
-                ))}
-              </TextField>
-            </Grid>
-
-            {paymentMethod === "creditCard" && (
-              <>
-                <Grid item xs={12}>
-                  <TextField
-                    label={t("cardNumber")}
-                    fullWidth
-                    placeholder="**** **** **** ****"
-                  />
-                </Grid>
-                <Grid item xs={6}>
-                  <TextField
-                    label={t("expirationDate")}
-                    fullWidth
-                    placeholder="MM/YY"
-                  />
-                </Grid>
-                <Grid item xs={6}>
-                  <TextField label="CVC" fullWidth placeholder="***" />
-                </Grid>
-              </>
-            )}
-
-            {paymentMethod === "paypal" && (
-              <Grid item xs={12}>
-                <Alert severity="info">
-                  {t("youWillBeRedirectedToPayPal")}
-                </Alert>
-              </Grid>
-            )}
-
-            {paymentMethod === "bankTransfer" && (
-              <Grid item xs={12}>
-                <Alert severity="info">
-                  {t("bankDetailsWillBeSentToYourEmail")}
-                </Alert>
-              </Grid>
-            )}
-
-            <Grid item xs={12}>
               <Box
                 sx={{
-                  backgroundColor: alpha(theme.palette.info.main, 0.1),
-                  p: 2,
-                  borderRadius: 1,
+                  display: "flex",
+                  justifyContent: "space-between",
+                  mb: 1,
                 }}
               >
-                <Typography variant="subtitle2" gutterBottom>
-                  {t("subscriptionSummary")}
+                <Typography variant="body2">{t("plan")}</Typography>
+                <Typography variant="body2" fontWeight="bold">
+                  {planName || t("selectedPlan")}
                 </Typography>
-
-                <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    mb: 1,
-                  }}
-                >
-                  <Typography variant="body2">{t("plan")}</Typography>
-                  <Typography variant="body2" fontWeight="bold">
-                    {planName}
-                  </Typography>
-                </Box>
-
-                <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    mb: 1,
-                  }}
-                >
-                  <Typography variant="body2">{t("billingCycle")}</Typography>
-                  <Typography variant="body2">{t("monthly")}</Typography>
-                </Box>
-
-                <Divider sx={{ my: 1 }} />
-
-                <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-                  <Typography variant="subtitle2">{t("total")}</Typography>
-                  <Typography variant="subtitle1" fontWeight="bold">
-                    {typeof planPrice === "number"
-                      ? `₺${planPrice}`
-                      : planPrice}
-                  </Typography>
-                </Box>
               </Box>
-            </Grid>
+
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  mb: 1,
+                }}
+              >
+                <Typography variant="body2">{t("billingCycle")}</Typography>
+                <Typography variant="body2">{t("monthly")}</Typography>
+              </Box>
+
+              <Divider sx={{ my: 1 }} />
+
+              <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                <Typography variant="subtitle2">{t("total")}</Typography>
+                <Typography variant="subtitle1" fontWeight="bold">
+                  {typeof planPrice === "number"
+                    ? `₺${planPrice}`
+                    : planPrice || t("free")}
+                </Typography>
+              </Box>
+            </Box>
           </Grid>
-        )}
+        </Grid>
       </DialogContent>
 
       <DialogActions>
-        <Button onClick={onClose}>{t("cancel")}</Button>
+        <Button onClick={onClose} disabled={isLoading}>
+          {t("cancel")}
+        </Button>
         <Button
           variant="contained"
           color="primary"

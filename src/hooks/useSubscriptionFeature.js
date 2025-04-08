@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   CheckFeatureAccess,
@@ -7,22 +7,40 @@ import {
 
 export const useSubscriptionFeature = (featureName) => {
   const dispatch = useDispatch();
-  const { currentSubscription } = useSelector((state) => state.subscription);
+  const [isLoading, setIsLoading] = useState(true);
+  const { currentSubscription, featureAccess, featureLimits } = useSelector(
+    (state) => state.subscription
+  );
 
   const checkAccess = async () => {
-    if (featureName && currentSubscription) {
-      await dispatch(CheckFeatureAccess(featureName));
+    try {
+      setIsLoading(true);
+      if (featureName && currentSubscription) {
+        await dispatch(CheckFeatureAccess(featureName));
+      }
+    } catch (error) {
+      console.error("Error checking feature access:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    checkAccess();
+    if (featureName) {
+      checkAccess();
+    } else {
+      setIsLoading(false);
+    }
   }, [featureName, currentSubscription]);
 
   const getPlanBasedAccess = () => {
-    if (!currentSubscription) return false;
+    if (featureAccess && featureAccess[featureName] !== undefined) {
+      return featureAccess[featureName];
+    }
 
-    const planId = currentSubscription.subscription.planId;
+    if (!currentSubscription || !currentSubscription.subscription) return false;
+
+    const planId = currentSubscription.subscription.planId || "free";
 
     switch (featureName) {
       case "psychologist_support":
@@ -39,15 +57,23 @@ export const useSubscriptionFeature = (featureName) => {
       case "all_meditation_content":
         return planId === "premium" || planId === "pro";
 
+      case "basic_mood_tracking":
+      case "basic_ai_chat":
+        return true;
+
       default:
         return false;
     }
   };
 
   const getPlanLimit = () => {
-    if (!currentSubscription) return 0;
+    if (featureLimits && featureLimits[featureName] !== undefined) {
+      return featureLimits[featureName];
+    }
 
-    const planId = currentSubscription.subscription.planId;
+    if (!currentSubscription || !currentSubscription.subscription) return 0;
+
+    const planId = currentSubscription.subscription.planId || "free";
 
     switch (featureName) {
       case "mood_entry":
@@ -74,12 +100,15 @@ export const useSubscriptionFeature = (featureName) => {
     }
   };
 
+  const limit = getPlanLimit();
+
   return {
     hasAccess: getPlanBasedAccess(),
-    limit: getPlanLimit(),
-    isUnlimited: getPlanLimit() === -1,
-    isLoading: false,
+    limit,
+    isUnlimited: limit === -1,
+    isLoading,
     currentPlan: currentSubscription?.subscription?.planId || "free",
+    refresh: checkAccess,
   };
 };
 

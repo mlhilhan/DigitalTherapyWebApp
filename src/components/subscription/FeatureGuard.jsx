@@ -1,16 +1,36 @@
 import React from "react";
-import { Box, Typography, Button } from "@mui/material";
+import { Box, Typography, Button, CircularProgress } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import useSubscriptionFeature from "../../hooks/useSubscriptionFeature";
 
-const FeatureGuard = ({ featureName, children, fallback }) => {
+const FeatureGuard = ({
+  featureName,
+  children,
+  fallback,
+  loadingComponent,
+}) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { hasAccess, isLoading } = useSubscriptionFeature(featureName);
 
   if (isLoading) {
-    return <Box sx={{ p: 3 }}>{t("loading")}...</Box>;
+    if (loadingComponent) {
+      return loadingComponent;
+    }
+    return (
+      <Box
+        sx={{
+          p: 3,
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <CircularProgress size={24} sx={{ mr: 1 }} />
+        <Typography>{t("loading")}...</Typography>
+      </Box>
+    );
   }
 
   if (!hasAccess) {

@@ -63,30 +63,6 @@ export const GetSubscriptionPlan = createAsyncThunk(
   }
 );
 
-// export const GetCurrentUserSubscription = createAsyncThunk(
-//   "subscription/GetCurrentUserSubscription",
-//   async (_, { rejectWithValue }) => {
-//     try {
-//       const response = await subscriptionAPI.getCurrentUserSubscription();
-
-//       if (!response.success) {
-//         return rejectWithValue(
-//           response.message || "Failed to retrieve current subscription"
-//         );
-//       }
-
-//       return response.data;
-//     } catch (error) {
-//       const errorMessage =
-//         error.response?.data?.message ||
-//         error.message ||
-//         i18n.t("anUnexpectedErrorOccurred");
-
-//       return rejectWithValue(errorMessage);
-//     }
-//   }
-// );
-
 export const GetCurrentUserSubscription = createAsyncThunk(
   "subscription/GetCurrentUserSubscription",
   async (_, { rejectWithValue }) => {
@@ -101,20 +77,30 @@ export const GetCurrentUserSubscription = createAsyncThunk(
 
       return response.data;
     } catch (error) {
-      if (error.response && error.response.status === 404) {
+      if (error.response) {
+        const errorMessage =
+          error.response?.data?.message ||
+          error.message ||
+          i18n.t("anUnexpectedErrorOccurred");
+
         return {
+          error: errorMessage,
           defaultFreePlan: true,
-          planId: "free",
-          isActive: true,
+          subscription: {
+            planId: "free",
+            isActive: true,
+            autoRenew: false,
+            startDate: new Date().toISOString(),
+            endDate: new Date(
+              new Date().setFullYear(new Date().getFullYear() + 100)
+            ).toISOString(),
+          },
         };
       }
 
-      const errorMessage =
-        error.response?.data?.message ||
-        error.message ||
-        i18n.t("anUnexpectedErrorOccurred");
-
-      return rejectWithValue(errorMessage);
+      return rejectWithValue(
+        error.message || i18n.t("anUnexpectedErrorOccurred")
+      );
     }
   }
 );
@@ -256,6 +242,14 @@ export const CheckFeatureAccess = createAsyncThunk(
         hasAccess: response.hasAccess,
       };
     } catch (error) {
+      if (error.response) {
+        return {
+          featureName,
+          hasAccess: false,
+          error: true,
+        };
+      }
+
       const errorMessage =
         error.response?.data?.message ||
         error.message ||
@@ -283,6 +277,14 @@ export const GetFeatureLimit = createAsyncThunk(
         limit: response.limit,
       };
     } catch (error) {
+      if (error.response) {
+        return {
+          featureName,
+          limit: 0,
+          error: true,
+        };
+      }
+
       const errorMessage =
         error.response?.data?.message ||
         error.message ||
@@ -331,6 +333,7 @@ const subscriptionSlice = createSlice({
       .addCase(GetSubscriptionPlans.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+        state.availablePlans = [];
       })
 
       // GetSubscriptionPlan
@@ -354,27 +357,26 @@ const subscriptionSlice = createSlice({
       })
       .addCase(GetCurrentUserSubscription.fulfilled, (state, action) => {
         state.loading = false;
-        state.currentSubscription = action.payload;
+
+        if (action.payload && action.payload.defaultFreePlan) {
+          state.error = action.payload.error;
+          state.currentSubscription = {
+            subscription: action.payload.subscription,
+          };
+        } else {
+          state.currentSubscription = action.payload;
+        }
       })
-      // .addCase(GetCurrentUserSubscription.rejected, (state, action) => {
-      //   state.loading = false;
-      //   state.error = action.payload;
-      // })
-      // subscriptionSlice.js içindeki extraReducers kısmında
       .addCase(GetCurrentUserSubscription.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
-
-        if (action.payload && action.payload.defaultFreePlan) {
-          state.currentSubscription = {
-            subscription: {
-              planId: action.payload.planId || "free",
-              isActive: action.payload.isActive || true,
-              autoRenew: false,
-            },
-          };
-          state.error = null;
-        }
+        state.currentSubscription = {
+          subscription: {
+            planId: "free",
+            isActive: true,
+            autoRenew: false,
+          },
+        };
       })
 
       // SubscribeToPlan
@@ -442,6 +444,7 @@ const subscriptionSlice = createSlice({
       .addCase(GetBillingHistory.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+        state.billingHistory = [];
       })
 
       // CreatePaymentForm
@@ -468,14 +471,27 @@ const subscriptionSlice = createSlice({
       })
       .addCase(CheckFeatureAccess.fulfilled, (state, action) => {
         state.loading = false;
-        state.featureAccess = {
-          ...state.featureAccess,
-          [action.payload.featureName]: action.payload.hasAccess,
-        };
+        if (action.payload.error) {
+          state.featureAccess = {
+            ...state.featureAccess,
+            [action.payload.featureName]: false,
+          };
+        } else {
+          state.featureAccess = {
+            ...state.featureAccess,
+            [action.payload.featureName]: action.payload.hasAccess,
+          };
+        }
       })
       .addCase(CheckFeatureAccess.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+        if (action.meta && action.meta.arg) {
+          state.featureAccess = {
+            ...state.featureAccess,
+            [action.meta.arg]: false,
+          };
+        }
       })
 
       // GetFeatureLimit
@@ -485,14 +501,27 @@ const subscriptionSlice = createSlice({
       })
       .addCase(GetFeatureLimit.fulfilled, (state, action) => {
         state.loading = false;
-        state.featureLimits = {
-          ...state.featureLimits,
-          [action.payload.featureName]: action.payload.limit,
-        };
+        if (action.payload.error) {
+          state.featureLimits = {
+            ...state.featureLimits,
+            [action.payload.featureName]: 0,
+          };
+        } else {
+          state.featureLimits = {
+            ...state.featureLimits,
+            [action.payload.featureName]: action.payload.limit,
+          };
+        }
       })
       .addCase(GetFeatureLimit.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+        if (action.meta && action.meta.arg) {
+          state.featureLimits = {
+            ...state.featureLimits,
+            [action.meta.arg]: 0,
+          };
+        }
       });
   },
 });

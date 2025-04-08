@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, Typography, Paper, useTheme } from "@mui/material";
+import { Box, Typography, Paper, useTheme, Alert } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import {
   Cancel,
@@ -16,7 +16,12 @@ const SubscriptionComparisonTable = ({ plans }) => {
   const { t } = useTranslation();
   const theme = useTheme();
 
-  // Define the feature categories we want to display
+  const safePlans = plans || [];
+
+  if (!safePlans.length) {
+    return <Alert severity="info">{t("noPlansAvailableForComparison")}</Alert>;
+  }
+
   const featureCategories = [
     {
       id: "moodEntries",
@@ -100,7 +105,6 @@ const SubscriptionComparisonTable = ({ plans }) => {
             borderCollapse: "collapse",
           }}
         >
-          {/* Table Header */}
           <Box
             sx={{
               display: "table-header-group",
@@ -121,31 +125,30 @@ const SubscriptionComparisonTable = ({ plans }) => {
                   {t("features")}
                 </Typography>
               </Box>
-              {plans.map((plan) => (
+              {safePlans.map((plan) => (
                 <Box
-                  key={plan.id}
+                  key={plan?.id || Math.random()}
                   sx={{
                     display: "table-cell",
                     p: 2,
                     textAlign: "center",
                     borderBottom: "1px solid",
                     borderColor: "divider",
-                    width: `${70 / plans.length}%`,
+                    width: `${70 / safePlans.length}%`,
                   }}
                 >
                   <Typography
                     variant="subtitle2"
                     fontWeight="bold"
-                    sx={{ color: plan.color }}
+                    sx={{ color: plan?.color || "primary.main" }}
                   >
-                    {plan.title}
+                    {plan?.title || t("unknownPlan")}
                   </Typography>
                 </Box>
               ))}
             </Box>
           </Box>
 
-          {/* Table Body - Features */}
           <Box sx={{ display: "table-row-group" }}>
             {featureCategories.map((category) => (
               <Box sx={{ display: "table-row" }} key={category.id}>
@@ -168,12 +171,16 @@ const SubscriptionComparisonTable = ({ plans }) => {
                     </Typography>
                   </Box>
                 </Box>
-                {plans.map((plan) => {
-                  const value = category.values[plan.id];
+                {safePlans.map((plan) => {
+                  const planId = plan?.id || "free";
+                  const value = category.values[planId] || {
+                    available: false,
+                    text: "",
+                  };
 
                   return (
                     <Box
-                      key={`${category.id}-${plan.id}`}
+                      key={`${category.id}-${planId}`}
                       sx={{
                         display: "table-cell",
                         p: 2,

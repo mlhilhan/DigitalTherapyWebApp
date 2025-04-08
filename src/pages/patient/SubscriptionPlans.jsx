@@ -1,4 +1,3 @@
-// src/pages/patient/SubscriptionPlans.jsx
 import React, { useState, useEffect } from "react";
 import {
   Container,
@@ -10,6 +9,8 @@ import {
   Button,
   useTheme,
   Alert,
+  CircularProgress,
+  Skeleton,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import {
@@ -29,11 +30,11 @@ import {
   clearSubscriptionError,
   resetSubscriptionSuccess,
 } from "../../features/subscription/subscriptionSlice";
-
 import SubscriptionPlanCard from "../../components/subscription/SubscriptionPlanCard";
 import SubscriptionComparisonTable from "../../components/subscription/SubscriptionComparisonTable";
 import PaymentDialog from "../../components/subscription/PaymentDialog";
 import SubscriptionFAQ from "../../components/subscription/SubscriptionFAQ";
+import NotificationSnackbar from "../../components/common/NotificationSnackbar";
 
 const SubscriptionPlans = () => {
   const { t } = useTranslation();
@@ -48,7 +49,6 @@ const SubscriptionPlans = () => {
     severity: "info",
   });
 
-  // Redux state
   const { user } = useSelector((state) => state.auth);
   const { profile } = useSelector((state) => state.profile);
   const {
@@ -60,40 +60,50 @@ const SubscriptionPlans = () => {
     success,
   } = useSelector((state) => state.subscription);
 
-  // Kullanıcı dil ve ülke tercihlerini al
   const countryCode = profile?.country || "US";
   const languageCode = profile?.preferredLanguage || "en";
 
-  // Component yüklendiğinde verileri getir
   useEffect(() => {
     dispatch(GetSubscriptionPlans({ countryCode, languageCode }));
     dispatch(GetCurrentUserSubscription());
+    console.log("API'den gelen planlar:", availablePlans);
 
-    // Component unmount olduğunda state'i temizle
     return () => {
       dispatch(clearSubscriptionError());
       dispatch(resetSubscriptionSuccess());
     };
   }, [dispatch, countryCode, languageCode]);
 
-  // Bir plan seçildiğinde
   const handlePlanSelect = (planId) => {
-    const plan = availablePlans.find(
-      (p) => p.id.toString() === planId.toString()
+    const plan = availablePlans?.find(
+      (p) => p.id?.toString() === planId?.toString()
     );
-    setSelectedPlan(plan);
-    setOpenPaymentDialog(true);
+    if (plan) {
+      setSelectedPlan(plan);
+      setOpenPaymentDialog(true);
+    } else {
+      setNotification({
+        open: true,
+        message: t("selectedPlanNotFound"),
+        severity: "error",
+      });
+    }
   };
 
-  // Dialog kapanınca
   const handlePaymentDialogClose = () => {
     setOpenPaymentDialog(false);
     setSelectedPlan(null);
   };
 
-  // Ödeme işlemi başlatılınca
   const handlePaymentSubmit = () => {
-    if (!selectedPlan) return;
+    if (!selectedPlan) {
+      setNotification({
+        open: true,
+        message: t("noPlanSelected"),
+        severity: "error",
+      });
+      return;
+    }
 
     const returnUrl = `${window.location.origin}/payment-callback`;
 
@@ -107,30 +117,38 @@ const SubscriptionPlans = () => {
     );
   };
 
-  // Ödeme formunu yükledikten sonra
   useEffect(() => {
     if (paymentForm && success) {
-      // iyzico formunu yükle
       if (paymentForm.formContent) {
-        // Form içeriğini DOM'a ekle ve göster
-        const container = document.createElement("div");
-        container.innerHTML = paymentForm.formContent;
-        document.body.appendChild(container);
+        try {
+          const container = document.createElement("div");
+          container.innerHTML = paymentForm.formContent;
+          document.body.appendChild(container);
 
-        // Dialog'u kapat
-        setOpenPaymentDialog(false);
+          setOpenPaymentDialog(false);
 
-        // Bildirim göster
+          setNotification({
+            open: true,
+            message: t("redirectingToPaymentPage"),
+            severity: "info",
+          });
+        } catch (e) {
+          setNotification({
+            open: true,
+            message: t("paymentFormLoadError"),
+            severity: "error",
+          });
+        }
+      } else {
         setNotification({
           open: true,
-          message: t("redirectingToPaymentPage"),
-          severity: "info",
+          message: t("paymentFormContentNotAvailable"),
+          severity: "error",
         });
       }
     }
   }, [paymentForm, success, t]);
 
-  // Hata durumunda kullanıcıya bildir
   useEffect(() => {
     if (error) {
       setNotification({
@@ -145,26 +163,26 @@ const SubscriptionPlans = () => {
     navigate("/contact-us");
   };
 
-  // Mevcut abonelik planını belirle
   const getCurrentPlanId = () => {
     if (currentSubscription?.subscription?.planId) {
       return currentSubscription.subscription.planId;
     }
-    return "free"; // Varsayılan olarak free
+    return "free";
   };
 
-  // Seçilen plan için fiyat ve isim bilgilerini al
   const getSelectedPlanInfo = () => {
     if (!selectedPlan) return { name: "", price: "" };
 
     return {
-      name: selectedPlan.name,
-      price: selectedPlan.price,
+      name: selectedPlan.name || selectedPlan.title || "",
+      price: selectedPlan.price || 0,
     };
   };
 
   const selectedPlanInfo = getSelectedPlanInfo();
   const currentPlanId = getCurrentPlanId();
+
+  const safePlans = availablePlans || [];
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
@@ -197,12 +215,16 @@ const SubscriptionPlans = () => {
                 sx={{ fontSize: 36, color: "primary.main", mr: 2 }}
               />
               <Box>
-                <Typography variant="h6">
-                  {t("currentPlan")}:{" "}
-                  <Box component="span" sx={{ fontWeight: "bold" }}>
-                    {t(currentPlanId + "Plan")}
-                  </Box>
-                </Typography>
+                {loading ? (
+                  <Skeleton variant="text" width={200} height={30} />
+                ) : (
+                  <Typography variant="h6">
+                    {t("currentPlan")}:{" "}
+                    <Box component="span" sx={{ fontWeight: "bold" }}>
+                      {t((currentPlanId || "free") + "Plan")}
+                    </Box>
+                  </Typography>
+                )}
                 <Typography variant="body2" color="text.secondary">
                   {t("youCanUpgradeDowngradeAnytime")}
                 </Typography>
@@ -220,6 +242,7 @@ const SubscriptionPlans = () => {
               color="primary"
               onClick={() => navigate("/patient-dashboard/billing-history")}
               sx={{ mr: 1 }}
+              disabled={loading}
             >
               {t("billingHistory")}
             </Button>
@@ -238,21 +261,31 @@ const SubscriptionPlans = () => {
       </Box>
 
       {/* Plan Kartları */}
-      {availablePlans && availablePlans.length > 0 ? (
-        availablePlans.map((plan) => (
-          <Grid item xs={12} sm={6} md={3} key={plan.id}>
-            <SubscriptionPlanCard
-              plan={plan}
-              currentPlan={currentPlanId}
-              onSelect={handlePlanSelect}
-              onContactUs={handleContactUs}
-            />
-          </Grid>
-        ))
-      ) : (
-        <Grid item xs={12}>
-          <Alert severity="info">{t("loadingSubscriptionPlans")}</Alert>
+      {loading ? (
+        <Grid container spacing={3} sx={{ mb: 6 }}>
+          {[1, 2, 3, 4].map((item) => (
+            <Grid item xs={12} sm={6} md={3} key={item}>
+              <Skeleton variant="rectangular" height={400} />
+            </Grid>
+          ))}
         </Grid>
+      ) : safePlans.length > 0 ? (
+        <Grid container spacing={3} sx={{ mb: 6 }}>
+          {safePlans.map((plan) => (
+            <Grid item xs={12} sm={6} md={3} key={plan?.id || Math.random()}>
+              <SubscriptionPlanCard
+                plan={plan}
+                currentPlan={currentPlanId}
+                onSelect={handlePlanSelect}
+                onContactUs={handleContactUs}
+              />
+            </Grid>
+          ))}
+        </Grid>
+      ) : (
+        <Alert severity="info" sx={{ mb: 4 }}>
+          {t("noSubscriptionPlansAvailable")}
+        </Alert>
       )}
 
       {/* Detaylı Özellik Karşılaştırma Bölümü */}
@@ -260,7 +293,13 @@ const SubscriptionPlans = () => {
         <Typography variant="h5" gutterBottom>
           {t("detailedFeatureComparison")}
         </Typography>
-        <SubscriptionComparisonTable plans={availablePlans} />
+        {loading ? (
+          <Skeleton variant="rectangular" height={300} />
+        ) : safePlans.length > 0 ? (
+          <SubscriptionComparisonTable plans={safePlans} />
+        ) : (
+          <Alert severity="info">{t("featureComparisonNotAvailable")}</Alert>
+        )}
       </Box>
 
       {/* SSS Bölümü */}
@@ -279,21 +318,12 @@ const SubscriptionPlans = () => {
       />
 
       {/* Bildirim */}
-      {notification.open && (
-        <Alert
-          severity={notification.severity}
-          sx={{
-            position: "fixed",
-            bottom: 24,
-            right: 24,
-            zIndex: 2000,
-            boxShadow: 4,
-          }}
-          onClose={() => setNotification({ ...notification, open: false })}
-        >
-          {notification.message}
-        </Alert>
-      )}
+      <NotificationSnackbar
+        open={notification.open}
+        onClose={() => setNotification({ ...notification, open: false })}
+        message={notification.message}
+        severity={notification.severity}
+      />
     </Container>
   );
 };

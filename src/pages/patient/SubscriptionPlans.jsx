@@ -1,3 +1,4 @@
+// src/pages/patient/SubscriptionPlans.jsx
 import React, { useState, useEffect } from "react";
 import {
   Container,
@@ -21,6 +22,14 @@ import {
 import { useSelector, useDispatch } from "react-redux";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
+import {
+  GetSubscriptionPlans,
+  GetCurrentUserSubscription,
+  CreatePaymentForm,
+  clearSubscriptionError,
+  resetSubscriptionSuccess,
+} from "../../features/subscription/subscriptionSlice";
+
 import SubscriptionPlanCard from "../../components/subscription/SubscriptionPlanCard";
 import SubscriptionComparisonTable from "../../components/subscription/SubscriptionComparisonTable";
 import PaymentDialog from "../../components/subscription/PaymentDialog";
@@ -31,186 +40,131 @@ const SubscriptionPlans = () => {
   const theme = useTheme();
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false);
   const [openPaymentDialog, setOpenPaymentDialog] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(null);
-  const { user } = useSelector((state) => state.auth);
-  const { profile } = useSelector((state) => state.profile);
-  const [currentPlan, setCurrentPlan] = useState("free");
   const [notification, setNotification] = useState({
     open: false,
     message: "",
     severity: "info",
   });
 
+  // Redux state
+  const { user } = useSelector((state) => state.auth);
+  const { profile } = useSelector((state) => state.profile);
+  const {
+    availablePlans,
+    currentSubscription,
+    paymentForm,
+    loading,
+    error,
+    success,
+  } = useSelector((state) => state.subscription);
+
+  // Kullanıcı dil ve ülke tercihlerini al
+  const countryCode = profile?.country || "US";
+  const languageCode = profile?.preferredLanguage || "en";
+
+  // Component yüklendiğinde verileri getir
   useEffect(() => {
-    // Kullanıcının mevcut abonelik planını getir
-    const loadSubscriptionData = async () => {
-      setIsLoading(true);
-      try {
-        // Gerçek API çağrısı burada yapılacak
-        // await dispatch(GetUserSubscription()).unwrap();
+    dispatch(GetSubscriptionPlans({ countryCode, languageCode }));
+    dispatch(GetCurrentUserSubscription());
 
-        // Demo amaçlı, sahte veri
-        setTimeout(() => {
-          setCurrentPlan("standard");
-          setIsLoading(false);
-        }, 500);
-      } catch (error) {
-        console.error("Abonelik verileri yüklenirken hata oluştu:", error);
-        setIsLoading(false);
-      }
+    // Component unmount olduğunda state'i temizle
+    return () => {
+      dispatch(clearSubscriptionError());
+      dispatch(resetSubscriptionSuccess());
     };
+  }, [dispatch, countryCode, languageCode]);
 
-    loadSubscriptionData();
-  }, [dispatch]);
-
-  const handlePlanSelect = (plan) => {
+  // Bir plan seçildiğinde
+  const handlePlanSelect = (planId) => {
+    const plan = availablePlans.find(
+      (p) => p.id.toString() === planId.toString()
+    );
     setSelectedPlan(plan);
     setOpenPaymentDialog(true);
   };
 
+  // Dialog kapanınca
   const handlePaymentDialogClose = () => {
     setOpenPaymentDialog(false);
     setSelectedPlan(null);
   };
 
+  // Ödeme işlemi başlatılınca
   const handlePaymentSubmit = () => {
-    // Ödeme işlemi burada gerçekleştirilecek
-    setIsLoading(true);
+    if (!selectedPlan) return;
 
-    // Sahte abonelik güncelleme API çağrısı
-    setTimeout(() => {
-      setCurrentPlan(selectedPlan);
-      setOpenPaymentDialog(false);
+    const returnUrl = `${window.location.origin}/payment-callback`;
+
+    dispatch(
+      CreatePaymentForm({
+        subscriptionId: selectedPlan.id,
+        amount: selectedPlan.price,
+        currency: selectedPlan.currencyCode || "TRY",
+        returnUrl,
+      })
+    );
+  };
+
+  // Ödeme formunu yükledikten sonra
+  useEffect(() => {
+    if (paymentForm && success) {
+      // iyzico formunu yükle
+      if (paymentForm.formContent) {
+        // Form içeriğini DOM'a ekle ve göster
+        const container = document.createElement("div");
+        container.innerHTML = paymentForm.formContent;
+        document.body.appendChild(container);
+
+        // Dialog'u kapat
+        setOpenPaymentDialog(false);
+
+        // Bildirim göster
+        setNotification({
+          open: true,
+          message: t("redirectingToPaymentPage"),
+          severity: "info",
+        });
+      }
+    }
+  }, [paymentForm, success, t]);
+
+  // Hata durumunda kullanıcıya bildir
+  useEffect(() => {
+    if (error) {
       setNotification({
         open: true,
-        message: t("subscriptionUpdatedSuccessfully"),
-        severity: "success",
+        message: error,
+        severity: "error",
       });
-      setIsLoading(false);
-    }, 1500);
-  };
+    }
+  }, [error]);
 
   const handleContactUs = () => {
     navigate("/contact-us");
   };
 
-  const showNotification = (message, severity = "info") => {
-    setNotification({
-      open: true,
-      message,
-      severity,
-    });
+  // Mevcut abonelik planını belirle
+  const getCurrentPlanId = () => {
+    if (currentSubscription?.subscription?.planId) {
+      return currentSubscription.subscription.planId;
+    }
+    return "free"; // Varsayılan olarak free
   };
-
-  // Abonelik planları verileri
-  const plans = [
-    {
-      id: "free",
-      title: t("freePlan"),
-      subtitle: t("tryBeforeYouBuy"),
-      price: "0",
-      period: t("month"),
-      color: theme.palette.info.main,
-      icon: <Info />,
-      features: [
-        { text: t("oneMoodEntryPerDay"), available: true },
-        {
-          text: t("oneAIChatPerWeek"),
-          available: true,
-          limit: "5-10 " + t("messages"),
-        },
-        { text: t("limitedDailyTips"), available: true },
-        { text: t("advancedReports"), available: false },
-        { text: t("unlimitedMoodEntries"), available: false },
-        { text: t("unlimitedAIChats"), available: false },
-        { text: t("psychologistChatSupport"), available: false },
-        { text: t("meditationExercises"), available: false },
-      ],
-      recommended: false,
-    },
-    {
-      id: "standard",
-      title: t("standardPlan"),
-      subtitle: t("mostPopular"),
-      price: "29.99",
-      period: t("month"),
-      color: theme.palette.primary.main,
-      icon: <Psychology />,
-      features: [
-        { text: t("unlimitedMoodEntries"), available: true },
-        {
-          text: t("threeAIChatsPerWeek"),
-          available: true,
-          limit: "30 " + t("messagesPerChat"),
-        },
-        { text: t("dailyAdvancedTips"), available: true },
-        { text: t("monthlyReports"), available: true },
-        { text: t("moodTrendGraphs"), available: true },
-        { text: t("goalSetting"), available: true },
-        { text: t("selectedMeditationContent"), available: true },
-        { text: t("psychologistChatSupport"), available: false },
-      ],
-      recommended: true,
-    },
-    {
-      id: "premium",
-      title: t("premiumPlan"),
-      subtitle: t("completeExperience"),
-      price: "59.99",
-      period: t("month"),
-      color: theme.palette.secondary.main,
-      icon: <Star />,
-      features: [
-        { text: t("unlimitedMoodEntries"), available: true },
-        { text: t("unlimitedAIChats"), available: true },
-        { text: t("personalizedTipsAndTasks"), available: true },
-        { text: t("weeklyDetailedReports"), available: true },
-        { text: t("advancedAnalytics"), available: true },
-        { text: t("allMeditationContent"), available: true },
-        {
-          text: t("psychologistChatSupport"),
-          available: true,
-          limit: "2 " + t("sessionsPerMonth"),
-        },
-        { text: t("emergencySupport"), available: true },
-      ],
-      recommended: false,
-    },
-    {
-      id: "pro",
-      title: t("proPlan"),
-      subtitle: t("forOrganizations"),
-      price: t("custom"),
-      period: "",
-      color: theme.palette.error.main,
-      icon: <BusinessCenter />,
-      features: [
-        { text: t("allPremiumFeatures"), available: true },
-        { text: t("customBranding"), available: true },
-        { text: t("dedicatedSupport"), available: true },
-        { text: t("teamDashboard"), available: true },
-        { text: t("organizationReports"), available: true },
-        { text: t("apiAccess"), available: true },
-        { text: t("customIntegrations"), available: true },
-        { text: t("contactSales"), available: true },
-      ],
-      recommended: false,
-      isContactUs: true,
-    },
-  ];
 
   // Seçilen plan için fiyat ve isim bilgilerini al
   const getSelectedPlanInfo = () => {
-    const plan = plans.find((p) => p.id === selectedPlan);
+    if (!selectedPlan) return { name: "", price: "" };
+
     return {
-      name: plan ? plan.title : "",
-      price: plan ? plan.price : "",
+      name: selectedPlan.name,
+      price: selectedPlan.price,
     };
   };
 
   const selectedPlanInfo = getSelectedPlanInfo();
+  const currentPlanId = getCurrentPlanId();
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
@@ -246,7 +200,7 @@ const SubscriptionPlans = () => {
                 <Typography variant="h6">
                   {t("currentPlan")}:{" "}
                   <Box component="span" sx={{ fontWeight: "bold" }}>
-                    {t(currentPlan + "Plan")}
+                    {t(currentPlanId + "Plan")}
                   </Box>
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
@@ -284,25 +238,29 @@ const SubscriptionPlans = () => {
       </Box>
 
       {/* Plan Kartları */}
-      <Grid container spacing={3} sx={{ mb: 6 }}>
-        {plans.map((plan) => (
+      {availablePlans && availablePlans.length > 0 ? (
+        availablePlans.map((plan) => (
           <Grid item xs={12} sm={6} md={3} key={plan.id}>
             <SubscriptionPlanCard
               plan={plan}
-              currentPlan={currentPlan}
+              currentPlan={currentPlanId}
               onSelect={handlePlanSelect}
               onContactUs={handleContactUs}
             />
           </Grid>
-        ))}
-      </Grid>
+        ))
+      ) : (
+        <Grid item xs={12}>
+          <Alert severity="info">{t("loadingSubscriptionPlans")}</Alert>
+        </Grid>
+      )}
 
       {/* Detaylı Özellik Karşılaştırma Bölümü */}
       <Box sx={{ mb: 6 }}>
         <Typography variant="h5" gutterBottom>
           {t("detailedFeatureComparison")}
         </Typography>
-        <SubscriptionComparisonTable plans={plans} />
+        <SubscriptionComparisonTable plans={availablePlans} />
       </Box>
 
       {/* SSS Bölümü */}
@@ -312,12 +270,12 @@ const SubscriptionPlans = () => {
       <PaymentDialog
         open={openPaymentDialog}
         onClose={handlePaymentDialogClose}
-        selectedPlan={selectedPlan}
+        selectedPlan={selectedPlan?.id}
         planName={selectedPlanInfo.name}
         planPrice={selectedPlanInfo.price}
         profile={profile}
         onConfirmPayment={handlePaymentSubmit}
-        isLoading={isLoading}
+        isLoading={loading}
       />
 
       {/* Bildirim */}

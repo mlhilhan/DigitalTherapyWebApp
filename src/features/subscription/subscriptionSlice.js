@@ -1,0 +1,502 @@
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import { subscriptionAPI } from "../../api/subscription";
+import i18n from "../../i18n/i18n";
+
+export const GetSubscriptionPlans = createAsyncThunk(
+  "subscription/GetSubscriptionPlans",
+  async (
+    { countryCode = "US", languageCode = "en" } = {},
+    { rejectWithValue }
+  ) => {
+    try {
+      const response = await subscriptionAPI.getSubscriptionPlans(
+        countryCode,
+        languageCode
+      );
+
+      if (!response.success) {
+        return rejectWithValue(
+          response.message || "Failed to retrieve subscription plans"
+        );
+      }
+
+      return response.data;
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        i18n.t("anUnexpectedErrorOccurred");
+
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
+export const GetSubscriptionPlan = createAsyncThunk(
+  "subscription/GetSubscriptionPlan",
+  async (
+    { id, countryCode = "US", languageCode = "en" },
+    { rejectWithValue }
+  ) => {
+    try {
+      const response = await subscriptionAPI.getSubscriptionPlan(
+        id,
+        countryCode,
+        languageCode
+      );
+
+      if (!response.success) {
+        return rejectWithValue(
+          response.message || "Failed to retrieve subscription plan"
+        );
+      }
+
+      return response.data;
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        i18n.t("anUnexpectedErrorOccurred");
+
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
+// export const GetCurrentUserSubscription = createAsyncThunk(
+//   "subscription/GetCurrentUserSubscription",
+//   async (_, { rejectWithValue }) => {
+//     try {
+//       const response = await subscriptionAPI.getCurrentUserSubscription();
+
+//       if (!response.success) {
+//         return rejectWithValue(
+//           response.message || "Failed to retrieve current subscription"
+//         );
+//       }
+
+//       return response.data;
+//     } catch (error) {
+//       const errorMessage =
+//         error.response?.data?.message ||
+//         error.message ||
+//         i18n.t("anUnexpectedErrorOccurred");
+
+//       return rejectWithValue(errorMessage);
+//     }
+//   }
+// );
+
+export const GetCurrentUserSubscription = createAsyncThunk(
+  "subscription/GetCurrentUserSubscription",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await subscriptionAPI.getCurrentUserSubscription();
+
+      if (!response.success) {
+        return rejectWithValue(
+          response.message || "Failed to retrieve current subscription"
+        );
+      }
+
+      return response.data;
+    } catch (error) {
+      if (error.response && error.response.status === 404) {
+        return {
+          defaultFreePlan: true,
+          planId: "free",
+          isActive: true,
+        };
+      }
+
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        i18n.t("anUnexpectedErrorOccurred");
+
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
+export const SubscribeToPlan = createAsyncThunk(
+  "subscription/SubscribeToPlan",
+  async (subscriptionData, { rejectWithValue }) => {
+    try {
+      const response = await subscriptionAPI.subscribeToPlan(subscriptionData);
+
+      if (!response.success) {
+        return rejectWithValue(
+          response.message || "Failed to subscribe to plan"
+        );
+      }
+
+      return response.data;
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        i18n.t("anUnexpectedErrorOccurred");
+
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
+export const CancelSubscription = createAsyncThunk(
+  "subscription/CancelSubscription",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await subscriptionAPI.cancelSubscription();
+
+      if (!response.success) {
+        return rejectWithValue(
+          response.message || "Failed to cancel subscription"
+        );
+      }
+
+      return response.data;
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        i18n.t("anUnexpectedErrorOccurred");
+
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
+export const ToggleAutoRenew = createAsyncThunk(
+  "subscription/ToggleAutoRenew",
+  async (autoRenew, { rejectWithValue }) => {
+    try {
+      const response = await subscriptionAPI.toggleAutoRenew(autoRenew);
+
+      if (!response.success) {
+        return rejectWithValue(
+          response.message || "Failed to update auto-renewal settings"
+        );
+      }
+
+      return response.data;
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        i18n.t("anUnexpectedErrorOccurred");
+
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
+export const GetBillingHistory = createAsyncThunk(
+  "subscription/GetBillingHistory",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await subscriptionAPI.getBillingHistory();
+
+      if (!response.success) {
+        return rejectWithValue(
+          response.message || "Failed to retrieve billing history"
+        );
+      }
+
+      return response.data;
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        i18n.t("anUnexpectedErrorOccurred");
+
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
+export const CreatePaymentForm = createAsyncThunk(
+  "subscription/CreatePaymentForm",
+  async (paymentFormData, { rejectWithValue }) => {
+    try {
+      const response = await subscriptionAPI.createPaymentForm(paymentFormData);
+
+      if (!response.success) {
+        return rejectWithValue(
+          response.message || "Failed to create payment form"
+        );
+      }
+
+      return response.data;
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        i18n.t("anUnexpectedErrorOccurred");
+
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
+export const CheckFeatureAccess = createAsyncThunk(
+  "subscription/CheckFeatureAccess",
+  async (featureName, { rejectWithValue }) => {
+    try {
+      const response = await subscriptionAPI.checkFeatureAccess(featureName);
+
+      if (!response.success) {
+        return rejectWithValue(
+          response.message || "Failed to check feature access"
+        );
+      }
+
+      return {
+        featureName,
+        hasAccess: response.hasAccess,
+      };
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        i18n.t("anUnexpectedErrorOccurred");
+
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
+export const GetFeatureLimit = createAsyncThunk(
+  "subscription/GetFeatureLimit",
+  async (featureName, { rejectWithValue }) => {
+    try {
+      const response = await subscriptionAPI.getFeatureLimit(featureName);
+
+      if (!response.success) {
+        return rejectWithValue(
+          response.message || "Failed to retrieve feature limit"
+        );
+      }
+
+      return {
+        featureName,
+        limit: response.limit,
+      };
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        i18n.t("anUnexpectedErrorOccurred");
+
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
+const initialState = {
+  availablePlans: [],
+  currentPlan: null,
+  currentSubscription: null,
+  billingHistory: [],
+  paymentForm: null,
+  featureAccess: {},
+  featureLimits: {},
+  loading: false,
+  error: null,
+  success: false,
+};
+
+const subscriptionSlice = createSlice({
+  name: "subscription",
+  initialState,
+  reducers: {
+    clearSubscriptionError: (state) => {
+      state.error = null;
+    },
+    resetSubscriptionSuccess: (state) => {
+      state.success = false;
+    },
+  },
+  extraReducers: (builder) => {
+    builder
+      // GetSubscriptionPlans
+      .addCase(GetSubscriptionPlans.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(GetSubscriptionPlans.fulfilled, (state, action) => {
+        state.loading = false;
+        state.availablePlans = action.payload;
+      })
+      .addCase(GetSubscriptionPlans.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // GetSubscriptionPlan
+      .addCase(GetSubscriptionPlan.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(GetSubscriptionPlan.fulfilled, (state, action) => {
+        state.loading = false;
+        state.currentPlan = action.payload;
+      })
+      .addCase(GetSubscriptionPlan.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // GetCurrentUserSubscription
+      .addCase(GetCurrentUserSubscription.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(GetCurrentUserSubscription.fulfilled, (state, action) => {
+        state.loading = false;
+        state.currentSubscription = action.payload;
+      })
+      // .addCase(GetCurrentUserSubscription.rejected, (state, action) => {
+      //   state.loading = false;
+      //   state.error = action.payload;
+      // })
+      // subscriptionSlice.js içindeki extraReducers kısmında
+      .addCase(GetCurrentUserSubscription.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+
+        if (action.payload && action.payload.defaultFreePlan) {
+          state.currentSubscription = {
+            subscription: {
+              planId: action.payload.planId || "free",
+              isActive: action.payload.isActive || true,
+              autoRenew: false,
+            },
+          };
+          state.error = null;
+        }
+      })
+
+      // SubscribeToPlan
+      .addCase(SubscribeToPlan.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        state.success = false;
+      })
+      .addCase(SubscribeToPlan.fulfilled, (state, action) => {
+        state.loading = false;
+        state.currentSubscription = action.payload;
+        state.success = true;
+      })
+      .addCase(SubscribeToPlan.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+        state.success = false;
+      })
+
+      // CancelSubscription
+      .addCase(CancelSubscription.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        state.success = false;
+      })
+      .addCase(CancelSubscription.fulfilled, (state) => {
+        state.loading = false;
+        state.currentSubscription = null;
+        state.success = true;
+      })
+      .addCase(CancelSubscription.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+        state.success = false;
+      })
+
+      // ToggleAutoRenew
+      .addCase(ToggleAutoRenew.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        state.success = false;
+      })
+      .addCase(ToggleAutoRenew.fulfilled, (state, action) => {
+        state.loading = false;
+        if (state.currentSubscription) {
+          state.currentSubscription.autoRenew = action.meta.arg;
+        }
+        state.success = true;
+      })
+      .addCase(ToggleAutoRenew.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+        state.success = false;
+      })
+
+      // GetBillingHistory
+      .addCase(GetBillingHistory.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(GetBillingHistory.fulfilled, (state, action) => {
+        state.loading = false;
+        state.billingHistory = action.payload;
+      })
+      .addCase(GetBillingHistory.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // CreatePaymentForm
+      .addCase(CreatePaymentForm.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        state.success = false;
+      })
+      .addCase(CreatePaymentForm.fulfilled, (state, action) => {
+        state.loading = false;
+        state.paymentForm = action.payload;
+        state.success = true;
+      })
+      .addCase(CreatePaymentForm.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+        state.success = false;
+      })
+
+      // CheckFeatureAccess
+      .addCase(CheckFeatureAccess.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(CheckFeatureAccess.fulfilled, (state, action) => {
+        state.loading = false;
+        state.featureAccess = {
+          ...state.featureAccess,
+          [action.payload.featureName]: action.payload.hasAccess,
+        };
+      })
+      .addCase(CheckFeatureAccess.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // GetFeatureLimit
+      .addCase(GetFeatureLimit.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(GetFeatureLimit.fulfilled, (state, action) => {
+        state.loading = false;
+        state.featureLimits = {
+          ...state.featureLimits,
+          [action.payload.featureName]: action.payload.limit,
+        };
+      })
+      .addCase(GetFeatureLimit.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      });
+  },
+});
+
+export const { clearSubscriptionError, resetSubscriptionSuccess } =
+  subscriptionSlice.actions;
+export default subscriptionSlice.reducer;

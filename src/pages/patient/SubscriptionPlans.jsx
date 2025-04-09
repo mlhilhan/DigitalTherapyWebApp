@@ -76,7 +76,7 @@ const SubscriptionPlans = () => {
 
   const handlePlanSelect = (planId) => {
     const plan = availablePlans?.find(
-      (p) => p.id?.toString() === planId?.toString()
+      (p) => p.planId?.toString() === planId?.toString()
     );
     if (plan) {
       setSelectedPlan(plan);
@@ -174,7 +174,7 @@ const SubscriptionPlans = () => {
     if (!selectedPlan) return { name: "", price: "" };
 
     return {
-      name: selectedPlan.name || selectedPlan.title || "",
+      name: selectedPlan.name || "",
       price: selectedPlan.price || 0,
     };
   };
@@ -290,9 +290,6 @@ const SubscriptionPlans = () => {
 
       {/* Detaylı Özellik Karşılaştırma Bölümü */}
       <Box sx={{ mb: 6 }}>
-        <Typography variant="h5" gutterBottom>
-          {t("detailedFeatureComparison")}
-        </Typography>
         {loading ? (
           <Skeleton variant="rectangular" height={300} />
         ) : safePlans.length > 0 ? (
@@ -301,6 +298,8 @@ const SubscriptionPlans = () => {
           <Alert severity="info">{t("featureComparisonNotAvailable")}</Alert>
         )}
       </Box>
+
+      <Box sx={{ mb: 12 }}> </Box>
 
       {/* SSS Bölümü */}
       <SubscriptionFAQ />

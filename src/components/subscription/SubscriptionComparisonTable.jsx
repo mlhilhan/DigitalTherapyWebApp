@@ -22,80 +22,84 @@ const SubscriptionComparisonTable = ({ plans }) => {
     return <Alert severity="info">{t("noPlansAvailableForComparison")}</Alert>;
   }
 
+  // Karşılaştırma tablosu için özellik kategorilerini oluşturma
   const featureCategories = [
     {
       id: "moodEntries",
       icon: <EmojiEmotions sx={{ mr: 1, color: "primary.main" }} />,
       title: t("moodEntries"),
-      values: {
-        free: { text: t("onePerDay"), available: true },
-        standard: { text: t("unlimited"), available: true },
-        premium: { text: t("unlimited"), available: true },
-        pro: { text: t("unlimited"), available: true },
-      },
+      getValue: (plan) => ({
+        text:
+          plan.moodEntryLimit === -1
+            ? t("unlimited")
+            : `${plan.moodEntryLimit} ${t("perDay")}`,
+        available: true,
+      }),
     },
     {
       id: "aiChat",
       icon: <ChatBubbleOutline sx={{ mr: 1, color: "primary.main" }} />,
       title: t("aiChatSessions"),
-      values: {
-        free: {
-          text: t("onePerWeek"),
-          available: true,
-          subtext: `(5-10 ${t("messages")})`,
-        },
-        standard: {
-          text: t("threePerWeek"),
-          available: true,
-          subtext: `(30 ${t("messages")})`,
-        },
-        premium: { text: t("unlimited"), available: true },
-        pro: { text: t("unlimited"), available: true },
-      },
+      getValue: (plan) => ({
+        text:
+          plan.aiChatSessionsPerWeek === -1
+            ? t("unlimited")
+            : `${plan.aiChatSessionsPerWeek} ${t("perWeek")}`,
+        available: true,
+        subtext:
+          plan.messageLimitPerChat === -1
+            ? undefined
+            : `(${plan.messageLimitPerChat} ${t("messages")})`,
+      }),
     },
     {
       id: "psychologist",
       icon: <Psychology sx={{ mr: 1, color: "primary.main" }} />,
       title: t("psychologistSupport"),
-      values: {
-        free: { text: "", available: false },
-        standard: { text: "", available: false },
-        premium: {
-          text: `2 ${t("sessionsPerMonth")}`,
-          available: true,
-        },
-        pro: {
-          text: t("customized"),
-          available: true,
-        },
-      },
+      getValue: (plan) => ({
+        text: plan.hasPsychologistSupport
+          ? plan.psychologistSessionsPerMonth > 0
+            ? `${plan.psychologistSessionsPerMonth} ${t("sessionsPerMonth")}`
+            : t("customized")
+          : "",
+        available: plan.hasPsychologistSupport,
+      }),
     },
     {
       id: "reports",
       icon: <BarChart sx={{ mr: 1, color: "primary.main" }} />,
       title: t("reportsAndAnalytics"),
-      values: {
-        free: { text: "", available: false },
-        standard: { text: t("monthly"), available: true },
-        premium: { text: t("weekly"), available: true },
-        pro: { text: t("customDashboards"), available: true },
-      },
+      getValue: (plan) => ({
+        text: plan.hasAdvancedReports
+          ? plan.planId === "pro"
+            ? t("customDashboards")
+            : plan.planId === "premium"
+            ? t("weekly")
+            : t("monthly")
+          : "",
+        available: plan.hasAdvancedReports,
+      }),
     },
     {
       id: "emergency",
       icon: <CalendarToday sx={{ mr: 1, color: "primary.main" }} />,
       title: t("emergencySupport"),
-      values: {
-        free: { text: "", available: false },
-        standard: { text: t("aiOnly"), available: true },
-        premium: { text: t("fullSupport"), available: true },
-        pro: { text: t("prioritySupport"), available: true },
-      },
+      getValue: (plan) => ({
+        text: plan.hasEmergencySupport
+          ? plan.planId === "pro"
+            ? t("prioritySupport")
+            : plan.planId === "premium"
+            ? t("fullSupport")
+            : t("aiOnly")
+          : "",
+        available: plan.hasEmergencySupport,
+      }),
     },
   ];
 
   return (
     <Paper sx={{ overflow: "hidden", borderRadius: 2 }}>
+      {/* Tablo başlığı ve içeriği */}
       <Box sx={{ overflowX: "auto" }}>
         <Box
           sx={{
@@ -127,7 +131,7 @@ const SubscriptionComparisonTable = ({ plans }) => {
               </Box>
               {safePlans.map((plan) => (
                 <Box
-                  key={plan?.id || Math.random()}
+                  key={plan?.planId || Math.random()}
                   sx={{
                     display: "table-cell",
                     p: 2,
@@ -140,9 +144,18 @@ const SubscriptionComparisonTable = ({ plans }) => {
                   <Typography
                     variant="subtitle2"
                     fontWeight="bold"
-                    sx={{ color: plan?.color || "primary.main" }}
+                    sx={{
+                      color:
+                        plan?.planId === "premium"
+                          ? "warning.main"
+                          : plan?.planId === "standard"
+                          ? "primary.main"
+                          : plan?.planId === "pro"
+                          ? "success.main"
+                          : "text.primary",
+                    }}
                   >
-                    {plan?.title || t("unknownPlan")}
+                    {plan?.name || t("unknownPlan")}
                   </Typography>
                 </Box>
               ))}
@@ -172,15 +185,11 @@ const SubscriptionComparisonTable = ({ plans }) => {
                   </Box>
                 </Box>
                 {safePlans.map((plan) => {
-                  const planId = plan?.id || "free";
-                  const value = category.values[planId] || {
-                    available: false,
-                    text: "",
-                  };
+                  const value = category.getValue(plan);
 
                   return (
                     <Box
-                      key={`${category.id}-${planId}`}
+                      key={`${category.id}-${plan.planId}`}
                       sx={{
                         display: "table-cell",
                         p: 2,

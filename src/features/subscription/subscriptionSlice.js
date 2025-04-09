@@ -63,6 +63,25 @@ export const GetSubscriptionPlan = createAsyncThunk(
   }
 );
 
+export const GetSubscriptionPlansByRole = createAsyncThunk(
+  "subscription/GetSubscriptionPlansByRole",
+  async ({ roleId, countryCode, languageCode }, { rejectWithValue }) => {
+    try {
+      const response = await subscriptionAPI.getSubscriptionPlansByRole(
+        roleId,
+        countryCode,
+        languageCode
+      );
+      if (!response.success) {
+        return rejectWithValue(response.message);
+      }
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || error.message);
+    }
+  }
+);
+
 export const GetCurrentUserSubscription = createAsyncThunk(
   "subscription/GetCurrentUserSubscription",
   async (_, { rejectWithValue }) => {
@@ -348,6 +367,21 @@ const subscriptionSlice = createSlice({
       .addCase(GetSubscriptionPlan.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+
+      // GetSubscriptionPlansByRole
+      .addCase(GetSubscriptionPlansByRole.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(GetSubscriptionPlansByRole.fulfilled, (state, action) => {
+        state.loading = false;
+        state.availablePlans = action.payload;
+      })
+      .addCase(GetSubscriptionPlansByRole.rejected, (state, action) => {
+        state.loading = false;
+        state.error =
+          action.payload || "Failed to get subscription plans by role";
       })
 
       // GetCurrentUserSubscription

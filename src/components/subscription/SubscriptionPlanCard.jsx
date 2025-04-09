@@ -15,13 +15,33 @@ import {
   useTheme,
   Skeleton,
 } from "@mui/material";
-import { CheckCircle, Cancel, ArrowForward } from "@mui/icons-material";
+import {
+  CheckCircle,
+  Cancel,
+  ArrowForward,
+  Subscriptions,
+  Star,
+  Psychology,
+  BusinessCenter,
+} from "@mui/icons-material";
 import { alpha } from "@mui/material/styles";
 import { useTranslation } from "react-i18next";
 
 const SubscriptionPlanCard = ({ plan, currentPlan, onSelect, onContactUs }) => {
   const { t } = useTranslation();
   const theme = useTheme();
+
+  const formatCurrency = (amount, currencyCode) => {
+    const currencySymbols = {
+      USD: "$",
+      EUR: "€",
+      TRY: "₺",
+      GBP: "£",
+    };
+
+    const symbol = currencySymbols[currencyCode] || currencyCode;
+    return `${symbol}${amount.toFixed(2)}`;
+  };
 
   if (!plan) {
     return (
@@ -44,7 +64,7 @@ const SubscriptionPlanCard = ({ plan, currentPlan, onSelect, onContactUs }) => {
     );
   }
 
-  const isCurrentPlan = currentPlan === plan.id;
+  const isCurrentPlan = currentPlan === plan.planId;
   const buttonText = isCurrentPlan
     ? t("currentPlan")
     : plan.isContactUs
@@ -53,19 +73,73 @@ const SubscriptionPlanCard = ({ plan, currentPlan, onSelect, onContactUs }) => {
   const buttonVariant = isCurrentPlan ? "outlined" : "contained";
   const buttonDisabled = isCurrentPlan;
 
+  const isRecommended = plan.planId === "premium";
+
+  const planIcon =
+    plan.planId === "free" ? (
+      <Subscriptions />
+    ) : plan.planId === "standard" ? (
+      <Star />
+    ) : plan.planId === "premium" ? (
+      <Psychology />
+    ) : (
+      <BusinessCenter />
+    );
+
+  const planColor =
+    plan.planId === "free"
+      ? theme.palette.grey[600]
+      : plan.planId === "standard"
+      ? theme.palette.primary.main
+      : plan.planId === "premium"
+      ? theme.palette.warning.main
+      : theme.palette.success.main;
+
+  const planFeatures = [
+    {
+      text: t("moodEntries"),
+      available: true,
+      limit:
+        plan.moodEntryLimit === -1
+          ? t("unlimited")
+          : `${plan.moodEntryLimit} ${t("perDay")}`,
+    },
+    {
+      text: t("aiChatSessions"),
+      available: true,
+      limit:
+        plan.aiChatSessionsPerWeek === -1
+          ? t("unlimited")
+          : `${plan.aiChatSessionsPerWeek} ${t("perWeek")}`,
+    },
+    {
+      text: t("psychologistSupport"),
+      available: plan.hasPsychologistSupport,
+      limit: plan.hasPsychologistSupport
+        ? `${plan.psychologistSessionsPerMonth} ${t("sessionsPerMonth")}`
+        : "",
+    },
+    {
+      text: t("reportsAndAnalytics"),
+      available: plan.hasAdvancedReports,
+    },
+    {
+      text: t("emergencySupport"),
+      available: plan.hasEmergencySupport,
+    },
+  ];
+
   const handleButtonClick = () => {
     if (plan.isContactUs) {
       onContactUs();
     } else if (!isCurrentPlan) {
-      onSelect(plan.id);
+      onSelect(plan.planId);
     }
   };
 
-  const planColor = plan.color || theme.palette.primary.main;
-
   return (
     <Card
-      elevation={plan.recommended ? 4 : 1}
+      elevation={isRecommended ? 4 : 1}
       sx={{
         height: "100%",
         display: "flex",
@@ -73,26 +147,35 @@ const SubscriptionPlanCard = ({ plan, currentPlan, onSelect, onContactUs }) => {
         position: "relative",
         borderRadius: 2,
         transition: "transform 0.3s, box-shadow 0.3s",
-        border: plan.recommended ? `2px solid ${planColor}` : "1px solid",
-        borderColor: plan.recommended ? planColor : "divider",
+        border: isRecommended ? `2px solid ${planColor}` : "1px solid",
+        borderColor: isRecommended ? planColor : "divider",
         "&:hover": {
           transform: "translateY(-5px)",
           boxShadow: 4,
         },
       }}
     >
-      {plan.recommended && (
-        <Chip
-          label={t("recommended")}
-          color="primary"
-          size="small"
+      {isRecommended && (
+        <Box
           sx={{
             position: "absolute",
-            top: -10,
-            right: 20,
+            top: 16,
+            right: -32,
+            backgroundColor: theme.palette.primary.main,
+            color: "white",
+            transform: "rotate(45deg)",
+            transformOrigin: "center",
+            width: 150,
+            textAlign: "center",
+            py: 0.5,
+            zIndex: 1,
             fontWeight: "bold",
+            fontSize: "0.75rem",
+            boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
           }}
-        />
+        >
+          {t("recommended")}
+        </Box>
       )}
       <CardHeader
         title={
@@ -110,14 +193,14 @@ const SubscriptionPlanCard = ({ plan, currentPlan, onSelect, onContactUs }) => {
                 mr: 1,
               }}
             >
-              {plan.icon || null}
+              {planIcon}
             </Box>
             <Typography variant="h6">
-              {plan.title || t("unknownPlan")}
+              {plan.name || t("unknownPlan")}
             </Typography>
           </Box>
         }
-        subheader={plan.subtitle || ""}
+        subheader={plan.description || ""}
         titleTypographyProps={{ fontWeight: "bold" }}
         sx={{ pb: 0 }}
       />
@@ -130,16 +213,23 @@ const SubscriptionPlanCard = ({ plan, currentPlan, onSelect, onContactUs }) => {
             sx={{ display: "inline" }}
           >
             {typeof plan.price === "number"
-              ? `₺${plan.price}`
+              ? `${
+                  plan.currencyCode === "USD"
+                    ? "$"
+                    : plan.currencyCode === "TRY"
+                    ? "₺"
+                    : plan.currencyCode
+                }${plan.price}`
               : plan.price || t("free")}
           </Typography>
-          {plan.period && (
+
+          {plan.durationInDays && (
             <Typography
               variant="subtitle1"
               component="span"
               color="text.secondary"
             >
-              /{plan.period}
+              /{t("monthly")}
             </Typography>
           )}
         </Box>
@@ -147,8 +237,8 @@ const SubscriptionPlanCard = ({ plan, currentPlan, onSelect, onContactUs }) => {
         <Divider sx={{ my: 2 }} />
 
         <List dense sx={{ py: 0 }}>
-          {plan.features && plan.features.length > 0 ? (
-            plan.features.map((feature, index) => (
+          {planFeatures && planFeatures.length > 0 ? (
+            planFeatures.map((feature, index) => (
               <ListItem key={index} sx={{ py: 0.5 }}>
                 <ListItemIcon sx={{ minWidth: 30 }}>
                   {feature.available ? (
@@ -204,7 +294,7 @@ const SubscriptionPlanCard = ({ plan, currentPlan, onSelect, onContactUs }) => {
         <Button
           fullWidth
           variant={buttonVariant}
-          color={plan.recommended ? "primary" : "inherit"}
+          color={isRecommended ? "primary" : "inherit"}
           size="large"
           disabled={buttonDisabled}
           onClick={handleButtonClick}
@@ -212,7 +302,7 @@ const SubscriptionPlanCard = ({ plan, currentPlan, onSelect, onContactUs }) => {
             borderRadius: 8,
             py: 1.5,
             fontWeight: "bold",
-            boxShadow: plan.recommended ? 2 : 0,
+            boxShadow: isRecommended ? 2 : 0,
           }}
           endIcon={buttonDisabled ? null : <ArrowForward />}
         >

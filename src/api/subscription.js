@@ -15,6 +15,17 @@ export const subscriptionAPI = {
     return response.data;
   },
 
+  getSubscriptionPlansByRole: async (
+    roleId,
+    countryCode = "US",
+    languageCode = "en"
+  ) => {
+    const response = await api.get(
+      `/Subscriptions/GetSubscriptionPlansByRole/${roleId}?countryCode=${countryCode}&languageCode=${languageCode}`
+    );
+    return response.data;
+  },
+
   getCurrentUserSubscription: async () => {
     const response = await api.get(`/Subscriptions/GetCurrentUserSubscription`);
     return response.data;

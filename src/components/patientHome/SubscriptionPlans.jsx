@@ -7,16 +7,38 @@ import {
   Button,
   Chip,
   alpha,
+  Skeleton,
 } from "@mui/material";
 import { WorkspacePremium, ArrowForward } from "@mui/icons-material";
 import { useTheme } from "@mui/material/styles";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
-const SubscriptionInfoCard = ({ currentPlan = "standard" }) => {
+const SubscriptionInfoCard = ({ currentSubscription, loading }) => {
   const { t } = useTranslation();
   const theme = useTheme();
   const navigate = useNavigate();
+
+  const currentPlanId = currentSubscription?.subscription?.planId || "free";
+
+  const getPlanColor = (planId) => {
+    switch (planId) {
+      case "premium":
+        return "warning";
+      case "standard":
+        return "primary";
+      case "pro":
+        return "success";
+      default:
+        return "primary";
+    }
+  };
+
+  const planColor = getPlanColor(currentPlanId);
+
+  const getPlanName = (planId) => {
+    return t(`${planId}Plan`);
+  };
 
   const handleViewSubscriptionPlans = () => {
     navigate("/patient-dashboard/subscription-plans");
@@ -48,8 +70,8 @@ const SubscriptionInfoCard = ({ currentPlan = "standard" }) => {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              bgcolor: alpha(theme.palette.warning.main, 0.1),
-              color: theme.palette.warning.main,
+              bgcolor: alpha(theme.palette[planColor].main, 0.1),
+              color: theme.palette[planColor].main,
               mr: 2,
             }}
           >
@@ -59,30 +81,28 @@ const SubscriptionInfoCard = ({ currentPlan = "standard" }) => {
             <Typography variant="h6" fontWeight={600}>
               {t("subscriptionPlans")}
             </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {t("currentPlan")}:{" "}
-              <Chip
-                label={
-                  currentPlan === "premium"
-                    ? t("premiumPlan")
-                    : t("standardPlan")
-                }
-                size="small"
-                color={currentPlan === "premium" ? "warning" : "primary"}
-                sx={{ height: 20, fontSize: "0.75rem" }}
-              />
-            </Typography>
+            {loading ? (
+              <Skeleton width={120} height={20} />
+            ) : (
+              <Typography variant="body2" color="text.secondary">
+                {t("currentPlan")}:{" "}
+                <Chip
+                  label={getPlanName(currentPlanId)}
+                  size="small"
+                  color={planColor}
+                  sx={{ height: 20, fontSize: "0.75rem" }}
+                />
+              </Typography>
+            )}
           </Box>
         </Box>
-
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
           {t("subscriptionShortDescription")}
         </Typography>
-
         <Button
           fullWidth
           variant="contained"
-          color="warning"
+          color={planColor}
           endIcon={<ArrowForward />}
           onClick={handleViewSubscriptionPlans}
           sx={{
@@ -92,7 +112,9 @@ const SubscriptionInfoCard = ({ currentPlan = "standard" }) => {
             boxShadow: 2,
           }}
         >
-          {t("viewSubscriptionPlans")}
+          {currentPlanId === "free"
+            ? t("upgradePlan")
+            : t("viewSubscriptionPlans")}
         </Button>
       </CardContent>
     </Card>

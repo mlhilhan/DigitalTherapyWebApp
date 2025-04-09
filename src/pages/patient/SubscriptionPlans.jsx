@@ -24,7 +24,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import {
-  GetSubscriptionPlans,
+  GetSubscriptionPlansByRole,
   GetCurrentUserSubscription,
   CreatePaymentForm,
   clearSubscriptionError,
@@ -35,6 +35,7 @@ import SubscriptionComparisonTable from "../../components/subscription/Subscript
 import PaymentDialog from "../../components/subscription/PaymentDialog";
 import SubscriptionFAQ from "../../components/subscription/SubscriptionFAQ";
 import NotificationSnackbar from "../../components/common/NotificationSnackbar";
+import roles from "../../config/roles";
 
 const SubscriptionPlans = () => {
   const { t } = useTranslation();
@@ -64,15 +65,22 @@ const SubscriptionPlans = () => {
   const languageCode = profile?.preferredLanguage || "en";
 
   useEffect(() => {
-    dispatch(GetSubscriptionPlans({ countryCode, languageCode }));
+    const roleId = user?.roleId || roles.PATIENT;
+
+    dispatch(
+      GetSubscriptionPlansByRole({
+        roleId,
+        countryCode,
+        languageCode,
+      })
+    );
     dispatch(GetCurrentUserSubscription());
-    console.log("API'den gelen planlar:", availablePlans);
 
     return () => {
       dispatch(clearSubscriptionError());
       dispatch(resetSubscriptionSuccess());
     };
-  }, [dispatch, countryCode, languageCode]);
+  }, [dispatch, countryCode, languageCode, user?.roleId]);
 
   const handlePlanSelect = (planId) => {
     const plan = availablePlans?.find(
@@ -171,11 +179,12 @@ const SubscriptionPlans = () => {
   };
 
   const getSelectedPlanInfo = () => {
-    if (!selectedPlan) return { name: "", price: "" };
+    if (!selectedPlan) return { name: "", price: "", currencyCode: "" };
 
     return {
       name: selectedPlan.name || "",
       price: selectedPlan.price || 0,
+      currencyCode: selectedPlan.currencyCode || "",
     };
   };
 
@@ -186,7 +195,6 @@ const SubscriptionPlans = () => {
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
-      {/* Sayfa Başlığı */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" gutterBottom fontWeight="bold">
           {t("subscriptionPlans")}
@@ -196,7 +204,6 @@ const SubscriptionPlans = () => {
         </Typography>
       </Box>
 
-      {/* Mevcut Abonelik Durumu */}
       <Paper
         elevation={0}
         sx={{
@@ -250,7 +257,6 @@ const SubscriptionPlans = () => {
         </Grid>
       </Paper>
 
-      {/* Planları Karşılaştır */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="h5" gutterBottom>
           {t("comparePlans")}
@@ -260,7 +266,6 @@ const SubscriptionPlans = () => {
         </Typography>
       </Box>
 
-      {/* Plan Kartları */}
       {loading ? (
         <Grid container spacing={3} sx={{ mb: 6 }}>
           {[1, 2, 3, 4].map((item) => (
@@ -288,8 +293,10 @@ const SubscriptionPlans = () => {
         </Alert>
       )}
 
-      {/* Detaylı Özellik Karşılaştırma Bölümü */}
       <Box sx={{ mb: 6 }}>
+        <Typography variant="h5" gutterBottom>
+          {t("detailedFeatureComparison")}
+        </Typography>
         {loading ? (
           <Skeleton variant="rectangular" height={300} />
         ) : safePlans.length > 0 ? (
@@ -299,24 +306,22 @@ const SubscriptionPlans = () => {
         )}
       </Box>
 
-      <Box sx={{ mb: 12 }}> </Box>
+      <Box sx={{ mb: 12 }}>
+        <SubscriptionFAQ />
+      </Box>
 
-      {/* SSS Bölümü */}
-      <SubscriptionFAQ />
-
-      {/* Ödeme Dialog'u */}
       <PaymentDialog
         open={openPaymentDialog}
         onClose={handlePaymentDialogClose}
         selectedPlan={selectedPlan?.id}
         planName={selectedPlanInfo.name}
         planPrice={selectedPlanInfo.price}
+        currencyCode={selectedPlanInfo.currencyCode}
         profile={profile}
         onConfirmPayment={handlePaymentSubmit}
         isLoading={loading}
       />
 
-      {/* Bildirim */}
       <NotificationSnackbar
         open={notification.open}
         onClose={() => setNotification({ ...notification, open: false })}

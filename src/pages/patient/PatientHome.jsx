@@ -26,6 +26,7 @@ import {
 } from "../../components/mood/utils/moodUtil";
 import { CreateEmotionalState } from "../../features/emotionalState/emotionalStateSlice";
 import NotificationSnackbar from "../../components/common/NotificationSnackbar";
+import { GetCurrentUserSubscription } from "../../features/subscription/subscriptionSlice";
 
 const PatientHome = () => {
   const { t } = useTranslation();
@@ -44,11 +45,15 @@ const PatientHome = () => {
     message: "",
     severity: "info",
   });
+  const { currentSubscription, loading: subscriptionLoading } = useSelector(
+    (state) => state.subscription
+  );
 
   useEffect(() => {
     const loadData = async () => {
       try {
         await dispatch(GetChatSessions()).unwrap();
+        await dispatch(GetCurrentUserSubscription()).unwrap();
       } catch (error) {
         console.error("Error loading sessions:", error);
       } finally {
@@ -203,7 +208,10 @@ const PatientHome = () => {
         {/* Sağ Bölüm */}
         <Grid item xs={12} md={4}>
           {/* Subscription Plans */}
-          <SubscriptionPlans currentPlan={"standard"} />
+          <SubscriptionPlans
+            currentSubscription={currentSubscription}
+            loading={subscriptionLoading}
+          />
 
           {/* Duygu Durumu Takibi */}
           <MoodTracker

@@ -26,22 +26,11 @@ import {
 } from "@mui/icons-material";
 import { alpha } from "@mui/material/styles";
 import { useTranslation } from "react-i18next";
+import { formatCurrency } from "../../utils/formattedPrice";
 
 const SubscriptionPlanCard = ({ plan, currentPlan, onSelect, onContactUs }) => {
   const { t } = useTranslation();
   const theme = useTheme();
-
-  const formatCurrency = (amount, currencyCode) => {
-    const currencySymbols = {
-      USD: "$",
-      EUR: "€",
-      TRY: "₺",
-      GBP: "£",
-    };
-
-    const symbol = currencySymbols[currencyCode] || currencyCode;
-    return `${symbol}${amount.toFixed(2)}`;
-  };
 
   if (!plan) {
     return (
@@ -156,26 +145,17 @@ const SubscriptionPlanCard = ({ plan, currentPlan, onSelect, onContactUs }) => {
       }}
     >
       {isRecommended && (
-        <Box
+        <Chip
+          label={t("recommended")}
+          color="primary"
+          size="small"
           sx={{
             position: "absolute",
-            top: 16,
-            right: -32,
-            backgroundColor: theme.palette.primary.main,
-            color: "white",
-            transform: "rotate(45deg)",
-            transformOrigin: "center",
-            width: 150,
-            textAlign: "center",
-            py: 0.5,
-            zIndex: 1,
+            top: 0,
+            right: 0,
             fontWeight: "bold",
-            fontSize: "0.75rem",
-            boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
           }}
-        >
-          {t("recommended")}
-        </Box>
+        />
       )}
       <CardHeader
         title={
@@ -212,17 +192,8 @@ const SubscriptionPlanCard = ({ plan, currentPlan, onSelect, onContactUs }) => {
             fontWeight="bold"
             sx={{ display: "inline" }}
           >
-            {typeof plan.price === "number"
-              ? `${
-                  plan.currencyCode === "USD"
-                    ? "$"
-                    : plan.currencyCode === "TRY"
-                    ? "₺"
-                    : plan.currencyCode
-                }${plan.price}`
-              : plan.price || t("free")}
+            {formatCurrency(plan.price, plan.currencyCode)}
           </Typography>
-
           {plan.durationInDays && (
             <Typography
               variant="subtitle1"

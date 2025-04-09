@@ -17,6 +17,7 @@ import {
 import { alpha } from "@mui/material/styles";
 import { useTheme } from "@mui/material/styles";
 import { useTranslation } from "react-i18next";
+import { formatCurrency } from "../../utils/formattedPrice";
 
 const PaymentDialog = ({
   open,
@@ -24,6 +25,7 @@ const PaymentDialog = ({
   selectedPlan,
   planName,
   planPrice,
+  currencyCode = "TRY",
   profile,
   onConfirmPayment,
   isLoading,
@@ -165,7 +167,7 @@ const PaymentDialog = ({
                 <Typography variant="subtitle2">{t("total")}</Typography>
                 <Typography variant="subtitle1" fontWeight="bold">
                   {typeof planPrice === "number"
-                    ? `₺${planPrice}`
+                    ? formatCurrency(planPrice, currencyCode)
                     : planPrice || t("free")}
                 </Typography>
               </Box>

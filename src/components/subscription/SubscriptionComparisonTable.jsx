@@ -11,6 +11,7 @@ import {
   CalendarToday,
 } from "@mui/icons-material";
 import { useTranslation } from "react-i18next";
+import { formatCurrency } from "../../utils/formattedPrice";
 
 const SubscriptionComparisonTable = ({ plans }) => {
   const { t } = useTranslation();
@@ -22,8 +23,16 @@ const SubscriptionComparisonTable = ({ plans }) => {
     return <Alert severity="info">{t("noPlansAvailableForComparison")}</Alert>;
   }
 
-  // Karşılaştırma tablosu için özellik kategorilerini oluşturma
   const featureCategories = [
+    {
+      id: "price",
+      icon: null,
+      title: t("price"),
+      getValue: (plan) => ({
+        text: formatCurrency(plan.price, plan.currencyCode),
+        available: true,
+      }),
+    },
     {
       id: "moodEntries",
       icon: <EmojiEmotions sx={{ mr: 1, color: "primary.main" }} />,
@@ -99,7 +108,6 @@ const SubscriptionComparisonTable = ({ plans }) => {
 
   return (
     <Paper sx={{ overflow: "hidden", borderRadius: 2 }}>
-      {/* Tablo başlığı ve içeriği */}
       <Box sx={{ overflowX: "auto" }}>
         <Box
           sx={{

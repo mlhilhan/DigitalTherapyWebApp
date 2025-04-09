@@ -2,6 +2,7 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { patientProfileAPI } from "../../api/profile";
 import config from "../../config";
 import i18n from "../../i18n/i18n";
+import { getUserCountryFromBrowser } from "../../utils/countryUtils";
 
 export const GetCurrentPatientProfile = createAsyncThunk(
   "profile/GetCurrentPatientProfile",
@@ -206,6 +207,34 @@ export const UpdateLanguagePreference = createAsyncThunk(
   }
 );
 
+export const UpdateUserCountry = createAsyncThunk(
+  "profile/UpdateUserCountry",
+  async (countryCode, { rejectWithValue, dispatch }) => {
+    try {
+      const formData = { country: countryCode };
+
+      const response = await patientProfileAPI.updateProfile(formData);
+
+      if (!response.success) {
+        return rejectWithValue(
+          response.message || "Ülke bilgisi güncellenemedi"
+        );
+      }
+
+      await dispatch(GetCurrentPatientProfile());
+
+      return countryCode;
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        i18n.t("anUnexpectedErrorOccurred");
+
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
 const initialState = {
   profile: null,
   patients: [],
@@ -213,6 +242,7 @@ const initialState = {
   error: null,
   success: false,
   languageLoaded: false,
+  userCountry: getUserCountryFromBrowser(),
 };
 
 const profileSlice = createSlice({
@@ -228,6 +258,9 @@ const profileSlice = createSlice({
     setLanguageLoaded: (state, action) => {
       state.languageLoaded = action.payload;
     },
+    updateUserCountry: (state, action) => {
+      state.userCountry = action.payload;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -240,6 +273,10 @@ const profileSlice = createSlice({
         state.loading = false;
         state.profile = action.payload;
         state.languageLoaded = true;
+
+        if (action.payload && action.payload.country) {
+          state.userCountry = action.payload.country;
+        }
       })
       .addCase(GetCurrentPatientProfile.rejected, (state, action) => {
         state.loading = false;
@@ -271,6 +308,11 @@ const profileSlice = createSlice({
         state.loading = false;
         state.profile = action.payload;
         state.success = true;
+
+        // Profil güncellendiğinde ülke bilgisi değişmiş olabilir
+        if (action.payload && action.payload.country) {
+          state.userCountry = action.payload.country;
+        }
       })
       .addCase(UpdatePatientProfile.rejected, (state, action) => {
         state.loading = false;
@@ -338,10 +380,29 @@ const profileSlice = createSlice({
       .addCase(UpdateLanguagePreference.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+
+      // UpdateUserCountry
+      .addCase(UpdateUserCountry.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(UpdateUserCountry.fulfilled, (state, action) => {
+        state.loading = false;
+        state.userCountry = action.payload;
+        state.success = true;
+      })
+      .addCase(UpdateUserCountry.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       });
   },
 });
 
-export const { clearProfileError, resetProfileSuccess, setLanguageLoaded } =
-  profileSlice.actions;
+export const {
+  clearProfileError,
+  resetProfileSuccess,
+  setLanguageLoaded,
+  updateUserCountry,
+} = profileSlice.actions;
 export default profileSlice.reducer;

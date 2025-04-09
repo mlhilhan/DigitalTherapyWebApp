@@ -17,6 +17,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useForm, Controller } from "react-hook-form";
 import { registerUser } from "../../features/auth/authSlice";
 import { useTranslation } from "react-i18next";
+import { getUserCountryFromBrowser } from "../../utils/countryUtils";
 
 const RegisterPage = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -26,6 +27,7 @@ const RegisterPage = () => {
   const navigate = useNavigate();
   const { isLoading, error } = useSelector((state) => state.auth);
   const userLanguage = i18n.language.split("-")[0]; // "en-EN" -> "en"
+  const userCountry = getUserCountryFromBrowser();
 
   const {
     control,
@@ -40,6 +42,7 @@ const RegisterPage = () => {
       confirmPassword: "",
       roleId: "4b41d3bc-95cb-4758-8c01-c5487707931e", //patient
       preferredLanguage: userLanguage,
+      country: userCountry,
     },
   });
 

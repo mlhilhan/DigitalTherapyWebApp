@@ -31,7 +31,69 @@ export const subscriptionAPI = {
     return response.data;
   },
 
+  // subscribeToPlan: async (subscriptionData) => {
+  //   const response = await api.post(
+  //     `/Subscriptions/SubscribeToPlan`,
+  //     subscriptionData,
+  //     {
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //       },
+  //     }
+  //   );
+  //   return response.data;
+  // },
+
+  // subscribeToPlan: async (subscriptionData) => {
+  //   if (
+  //     subscriptionData.subscriptionId === 1 ||
+  //     subscriptionData.planId === "free"
+  //   ) {
+  //     const freeSubscriptionData = {
+  //       subscriptionId: subscriptionData.subscriptionId,
+  //       paymentMethod: "free",
+  //       amount: 0,
+  //       transactionId: null,
+  //     };
+
+  //     const response = await api.post(
+  //       `/Subscriptions/SubscribeToPlan`,
+  //       freeSubscriptionData,
+  //       {
+  //         headers: {
+  //           "Content-Type": "application/json",
+  //         },
+  //       }
+  //     );
+  //     return response.data;
+  //   }
+
+  //   const response = await api.post(
+  //     `/Subscriptions/SubscribeToPlan`,
+  //     subscriptionData,
+  //     {
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //       },
+  //     }
+  //   );
+  //   return response.data;
+  // },
+
   subscribeToPlan: async (subscriptionData) => {
+    if (
+      subscriptionData.subscriptionId === 1 ||
+      subscriptionData.planId === "free"
+    ) {
+      if (!subscriptionData.returnUrl) {
+        subscriptionData.returnUrl = window.location.href;
+      }
+
+      if (!subscriptionData.transactionId) {
+        subscriptionData.transactionId = `free-${Date.now()}`;
+      }
+    }
+
     const response = await api.post(
       `/Subscriptions/SubscribeToPlan`,
       subscriptionData,

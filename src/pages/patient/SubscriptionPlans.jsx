@@ -29,12 +29,14 @@ import {
   CreatePaymentForm,
   clearSubscriptionError,
   resetSubscriptionSuccess,
+  SubscribeToPlan,
 } from "../../features/subscription/subscriptionSlice";
 import SubscriptionPlanCard from "../../components/subscription/SubscriptionPlanCard";
 import SubscriptionComparisonTable from "../../components/subscription/SubscriptionComparisonTable";
 import PaymentDialog from "../../components/subscription/PaymentDialog";
 import SubscriptionFAQ from "../../components/subscription/SubscriptionFAQ";
 import NotificationSnackbar from "../../components/common/NotificationSnackbar";
+import ConfirmationModal from "../../components/common/ConfirmationModal";
 import roles from "../../config/roles";
 
 const SubscriptionPlans = () => {
@@ -50,6 +52,19 @@ const SubscriptionPlans = () => {
     severity: "info",
   });
 
+  const [confirmModalProps, setConfirmModalProps] = useState({
+    open: false,
+    onConfirm: () => {},
+    itemId: null,
+    title: "",
+    message: "",
+    confirmButtonText: "",
+    cancelButtonText: "",
+    confirmColor: "primary",
+    type: "warning",
+    warningMessage: "",
+  });
+
   const { user } = useSelector((state) => state.auth);
   const { profile } = useSelector((state) => state.profile);
   const {
@@ -61,7 +76,7 @@ const SubscriptionPlans = () => {
     success,
   } = useSelector((state) => state.subscription);
 
-  const countryCode = profile?.country || "US";
+  const countryCode = profile?.countryCode || "US";
   const languageCode = profile?.preferredLanguage || "en";
 
   useEffect(() => {
@@ -86,16 +101,75 @@ const SubscriptionPlans = () => {
     const plan = availablePlans?.find(
       (p) => p.planId?.toString() === planId?.toString()
     );
-    if (plan) {
-      setSelectedPlan(plan);
-      setOpenPaymentDialog(true);
-    } else {
+
+    if (!plan) {
       setNotification({
         open: true,
         message: t("selectedPlanNotFound"),
         severity: "error",
       });
+      return;
     }
+
+    if (plan.planId === "free" || plan.id === 1) {
+      setConfirmModalProps({
+        open: true,
+        onConfirm: () => handleFreePlanConfirm(plan.id),
+        itemId: plan.id,
+        title: t("switchToFreePlan"),
+        message: t("areYouSureYouWantToSwitchToFreePlan"),
+        confirmButtonText: t("confirm"),
+        cancelButtonText: t("cancel"),
+        confirmColor: "primary",
+        type: "warning",
+        warningMessage: t("youWillLoseAccessToPremiumFeatures"),
+      });
+    } else {
+      setSelectedPlan(plan);
+      setOpenPaymentDialog(true);
+    }
+  };
+
+  // const handleFreePlanConfirm = (planId) => {
+  //   dispatch(SubscribeToPlan({ subscriptionId: planId })).then(
+  //     (resultAction) => {
+  //       if (!resultAction.error) {
+  //         setNotification({
+  //           open: true,
+  //           message: t("freeSubscriptionActivated"),
+  //           severity: "success",
+  //         });
+
+  //         dispatch(GetCurrentUserSubscription());
+  //       }
+  //     }
+  //   );
+  // };
+  // Ücretsiz plan onaylandığında
+  const handleFreePlanConfirm = (planId) => {
+    const returnUrl = window.location.href; // Mevcut sayfa URL'si
+    const transactionId = `free-${Date.now()}`; // Benzersiz işlem ID'si
+
+    dispatch(
+      SubscribeToPlan({
+        subscriptionId: planId,
+        paymentMethod: "free",
+        amount: 0,
+        transactionId: transactionId,
+        returnUrl: returnUrl,
+      })
+    ).then((resultAction) => {
+      if (!resultAction.error) {
+        setNotification({
+          open: true,
+          message: t("freeSubscriptionActivated"),
+          severity: "success",
+        });
+
+        // Plan bilgilerini güncellemek için
+        dispatch(GetCurrentUserSubscription());
+      }
+    });
   };
 
   const handlePaymentDialogClose = () => {
@@ -320,6 +394,22 @@ const SubscriptionPlans = () => {
         profile={profile}
         onConfirmPayment={handlePaymentSubmit}
         isLoading={loading}
+      />
+
+      <ConfirmationModal
+        open={confirmModalProps.open}
+        onClose={() =>
+          setConfirmModalProps({ ...confirmModalProps, open: false })
+        }
+        onConfirm={confirmModalProps.onConfirm}
+        itemId={confirmModalProps.itemId}
+        title={confirmModalProps.title}
+        message={confirmModalProps.message}
+        confirmButtonText={confirmModalProps.confirmButtonText}
+        cancelButtonText={confirmModalProps.cancelButtonText}
+        confirmColor={confirmModalProps.confirmColor}
+        type={confirmModalProps.type}
+        warningMessage={confirmModalProps.warningMessage}
       />
 
       <NotificationSnackbar

@@ -31,6 +31,7 @@ import {
   ArrowBack,
   NotificationsActive,
   VpnKey,
+  Public, // Ülke ikonu için ekledik
 } from "@mui/icons-material";
 import { useSelector, useDispatch } from "react-redux";
 import { format } from "date-fns";
@@ -48,6 +49,10 @@ import LoadingComponent, {
 import { toast } from "react-toastify";
 import appLanguages from "../../config/appLanguages";
 import NotificationPreferences from "../../components/profile/NotificationPreferences";
+import {
+  getCountryOptions,
+  getCountryNameByCode,
+} from "../../config/countries";
 
 function TabPanel({ children, value, index, ...other }) {
   return (
@@ -192,6 +197,13 @@ const PatientProfile = () => {
       multiline: true,
       rows: 4,
       gridSize: 12,
+    },
+    {
+      name: "countryCode",
+      label: t("country"),
+      type: "select",
+      options: getCountryOptions(t),
+      gridSize: 6,
     },
     {
       name: "preferredLanguage",
@@ -458,7 +470,6 @@ const PatientProfile = () => {
               overflow: "hidden",
               boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
               minHeight: "500px",
-              minWidth: "900px",
               display: "flex",
               flexDirection: "column",
             }}
@@ -543,6 +554,21 @@ const PatientProfile = () => {
 
                   <Grid item xs={12} sm={6}>
                     <InfoItem
+                      icon={<Public color="primary" />}
+                      label={t("country")}
+                      value={
+                        profile?.countryCode
+                          ? t(
+                              `${profile.countryCode.toLowerCase()}`,
+                              getCountryNameByCode(profile.countryCode)
+                            )
+                          : "-"
+                      }
+                    />
+                  </Grid>
+
+                  <Grid item xs={12} sm={6}>
+                    <InfoItem
                       icon={<Email color="primary" />}
                       label={t("email")}
                       value={user?.email}
@@ -577,35 +603,6 @@ const PatientProfile = () => {
             <TabPanel value={tabValue} index={1}>
               <Box sx={{ height: "100%" }}>
                 <Grid container spacing={3}>
-                  {/* <Grid item xs={12}>
-                    <Card
-                      variant="outlined"
-                      sx={{
-                        borderRadius: 2,
-                        p: 2,
-                        boxShadow: "none",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                      }}
-                    >
-                      <Box sx={{ display: "flex", alignItems: "center" }}>
-                        <NotificationsActive color="primary" sx={{ mr: 2 }} />
-                        <Box>
-                          <Typography variant="subtitle1" fontWeight={600}>
-                            {t("notificationPreferences")}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            {profile?.notificationPreferences || t("notSetUp")}
-                          </Typography>
-                        </Box>
-                      </Box>
-                      <Button variant="outlined" size="small">
-                        {t("manage")}
-                      </Button>
-                    </Card>
-                  </Grid> */}
-
                   <Grid item xs={12}>
                     <Card
                       variant="outlined"

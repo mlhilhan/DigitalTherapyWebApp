@@ -30,7 +30,6 @@ import trLocale from "date-fns/locale/tr";
 import { useTranslation } from "react-i18next";
 import { formatDateToISO } from "../../utils/dateUtils";
 
-// Styled components
 const VisuallyHiddenInput = styled("input")({
   clip: "rect(0 0 0 0)",
   clipPath: "inset(50%)",

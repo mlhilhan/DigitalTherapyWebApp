@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Box, useTheme, Typography, Button, Card } from "@mui/material";
+import { Box, useTheme, Typography, Button, Card, Alert } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { useDispatch, useSelector } from "react-redux";
 import { Add } from "@mui/icons-material";
+import { useNavigate } from "react-router-dom";
 import LoadingComponent, {
   LOADING_TYPES,
 } from "../../components/common/LoadingComponent";
@@ -31,10 +32,14 @@ import {
   setFilterDate,
 } from "../../features/emotionalState/emotionalStateSlice";
 import DeleteConfirmationModal from "../../components/common/DeleteConfirmationModal";
-import { toast } from "react-toastify";
+import NotificationSnackbar from "../../components/common/NotificationSnackbar";
+import ConfirmationModal from "../../components/common/ConfirmationModal";
+import { isToday } from "date-fns";
+import { useSubscriptionFeature } from "../../hooks/useSubscriptionFeature";
 
 const MoodJournal = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { entries, loading, error, viewMode, filterMode, filterDate } =
     useSelector((state) => state.emotionalState);
   const [openEntryDialog, setOpenEntryDialog] = useState(false);
@@ -43,21 +48,59 @@ const MoodJournal = () => {
   const [entryToDelete, setEntryToDelete] = useState(null);
   const { profile } = useSelector((state) => state.profile);
   const [patientFullName, setPatientFullName] = useState("");
+  const [notification, setNotification] = useState({
+    open: false,
+    message: "",
+    severity: "info",
+  });
+  const [confirmModalProps, setConfirmModalProps] = useState({
+    open: false,
+    onConfirm: () => {},
+    itemId: null,
+    title: "",
+    message: "",
+    confirmButtonText: "",
+    cancelButtonText: "",
+    confirmColor: "primary",
+    type: "warning",
+    warningMessage: "",
+  });
   const { t } = useTranslation();
   const theme = useTheme();
 
-  useEffect(() => {
-    dispatch(GetAllEmotionalStates());
-  }, [dispatch]);
+  const {
+    hasAccess: hasAdvancedViewsAccess,
+    limit: moodEntryLimit,
+    isUnlimited,
+    currentPlan,
+  } = useSubscriptionFeature("mood_entry");
 
-  useEffect(() => {
-    if (profile) {
-      const fullName = `${profile.firstName || ""} ${
-        profile?.lastName || ""
-      }`.trim();
-      setPatientFullName(fullName);
-    }
-  }, [profile]);
+  const canAddEntryForDate = useCallback(
+    (date) => {
+      if (isUnlimited) return true;
+
+      const effectiveLimit = moodEntryLimit <= 0 ? 1 : moodEntryLimit;
+
+      const targetDate = date ? new Date(date) : new Date();
+
+      const activeEntriesForDate = entries.filter((entry) => {
+        const entryDate = new Date(entry.date);
+        return (
+          entryDate.toDateString() === targetDate.toDateString() &&
+          entry.isDeleted === false
+        );
+      });
+
+      return activeEntriesForDate.length < effectiveLimit;
+    },
+    [entries, isUnlimited, moodEntryLimit]
+  );
+
+  const handleAddEntryClick = () => {
+    setOpenEntryDialog(true);
+  };
+
+  const canAddMoreEntries = canAddEntryForDate(new Date());
 
   const getMoodLabel = useCallback(
     (moodLevel) => {
@@ -86,14 +129,36 @@ const MoodJournal = () => {
   };
 
   const handleAddEntry = (formData) => {
+    if (!canAddEntryForDate(new Date(formData.date))) {
+      setNotification({
+        open: true,
+        message: t("dailyLimitReachedForSelectedDate"),
+        severity: "warning",
+      });
+      return;
+    }
+
     dispatch(CreateEmotionalState(formData))
       .unwrap()
       .then(() => {
         setOpenEntryDialog(false);
-        toast.success(t("moodRecordWasSavedSuccessfully"));
+        setNotification({
+          open: true,
+          message: t("moodRecordWasSavedSuccessfully"),
+          severity: "success",
+        });
       })
       .catch((error) => {
-        toast.error(error);
+        debugger;
+        const errorMessage = error.includes("daily limit")
+          ? t("dailyLimitReachedForSelectedDate")
+          : error;
+
+        setNotification({
+          open: true,
+          message: errorMessage,
+          severity: "error",
+        });
       });
   };
 
@@ -102,10 +167,18 @@ const MoodJournal = () => {
       .unwrap()
       .then(() => {
         setEditingEntry(null);
-        toast.success(t("moodRecordWasUpdatedSuccessfully"));
+        setNotification({
+          open: true,
+          message: t("moodRecordWasUpdatedSuccessfully"),
+          severity: "success",
+        });
       })
       .catch((error) => {
-        toast.error(error);
+        setNotification({
+          open: true,
+          message: error,
+          severity: "error",
+        });
       });
   };
 
@@ -118,10 +191,20 @@ const MoodJournal = () => {
     dispatch(DeleteEmotionalState(id))
       .unwrap()
       .then(() => {
-        toast.success(t("moodRecordWasDeletedSuccessfully"));
+        setNotification({
+          open: true,
+          message: t("moodRecordWasDeletedSuccessfully"),
+          severity: "success",
+        });
+
+        dispatch(GetAllEmotionalStates());
       })
       .catch((error) => {
-        toast.error(error);
+        setNotification({
+          open: true,
+          message: error,
+          severity: "error",
+        });
       });
   };
 
@@ -137,10 +220,18 @@ const MoodJournal = () => {
         const message = response.isBookmarked
           ? t("moodHasBeenBookmarked")
           : t("moodRemovedBookmarked");
-        toast.success(message);
+        setNotification({
+          open: true,
+          message: message,
+          severity: "success",
+        });
       })
       .catch((error) => {
-        toast.error(error);
+        setNotification({
+          open: true,
+          message: error,
+          severity: "error",
+        });
       });
   };
 
@@ -149,10 +240,56 @@ const MoodJournal = () => {
   };
 
   const handleViewModeChange = (newMode) => {
+    if (newMode !== "journal" && !hasAdvancedViewsAccess) {
+      setConfirmModalProps({
+        open: true,
+        itemId: null,
+        title: t("premiumFeature"),
+        message: t("advancedViewsRequirePremium"),
+        confirmButtonText: t("upgradePlan"),
+        cancelButtonText: t("cancel"),
+        confirmColor: "primary",
+        type: "info",
+        onConfirm: () => {
+          navigate("/patient-dashboard/subscription-plans");
+        },
+      });
+      return;
+    }
+
     dispatch(setViewMode(newMode));
   };
 
   const filteredEntries = getFilteredEntries(entries, filterMode, filterDate);
+
+  useEffect(() => {
+    dispatch(GetAllEmotionalStates());
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (profile) {
+      const fullName = `${profile.firstName || ""} ${
+        profile?.lastName || ""
+      }`.trim();
+      setPatientFullName(fullName);
+    }
+  }, [profile]);
+
+  useEffect(() => {
+    if (error) {
+      setNotification({
+        open: true,
+        message: error,
+        severity: "error",
+      });
+    }
+  }, [error]);
+
+  useEffect(() => {
+    if (hasAdvancedViewsAccess === false) {
+      dispatch(setViewMode("journal"));
+    }
+  }, [hasAdvancedViewsAccess, dispatch]);
 
   if (loading && entries.length === 0) {
     return <LoadingComponent type={LOADING_TYPES.CARD} count={3} />;
@@ -173,14 +310,33 @@ const MoodJournal = () => {
         filterDate={filterDate}
         onViewModeChange={handleViewModeChange}
         onFilterChange={handleFilterChange}
-        onAddNew={() => setOpenEntryDialog(true)}
+        onAddNew={handleAddEntryClick}
         patientName={patientFullName}
+        hasAdvancedViewsAccess={hasAdvancedViewsAccess}
       />
+
+      {!canAddMoreEntries && viewMode === "journal" && (
+        <Alert
+          severity="info"
+          sx={{ mb: 3 }}
+          action={
+            <Button
+              color="primary"
+              size="small"
+              onClick={() => navigate("/patient-dashboard/subscription-plans")}
+            >
+              {t("upgradePlan")}
+            </Button>
+          }
+        >
+          {t("dailyMoodEntryLimitReached")}
+        </Alert>
+      )}
 
       <Box sx={{ flexGrow: 1, overflow: "auto" }}>
         {viewMode === "journal" &&
           (filteredEntries.length === 0 ? (
-            <EmptyState onAddNew={() => setOpenEntryDialog(true)} />
+            <EmptyState onAddNew={handleAddEntryClick} />
           ) : (
             <Grid container spacing={3}>
               {filteredEntries.map((entry) => (
@@ -200,7 +356,7 @@ const MoodJournal = () => {
             </Grid>
           ))}
 
-        {viewMode === "calendar" && (
+        {viewMode === "calendar" && hasAdvancedViewsAccess && (
           <MoodCalendarView
             entries={entries}
             onSelectDate={handleSelectDate}
@@ -209,13 +365,31 @@ const MoodJournal = () => {
           />
         )}
 
-        {viewMode === "chart" && (
+        {viewMode === "chart" && hasAdvancedViewsAccess && (
           <MoodChartView
             entries={entries}
-            onAddNew={() => setOpenEntryDialog(true)}
+            onAddNew={handleAddEntryClick}
             getMoodLabel={getMoodLabel}
             theme={theme}
           />
+        )}
+
+        {viewMode !== "journal" && !hasAdvancedViewsAccess && (
+          <Card sx={{ p: 4, textAlign: "center", borderRadius: 2 }}>
+            <Typography variant="h5" gutterBottom>
+              {t("premiumFeature")}
+            </Typography>
+            <Typography variant="body1" sx={{ mb: 3 }}>
+              {t("upgradeToAccessAdvancedViews")}
+            </Typography>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={() => navigate("/patient-dashboard/subscription-plans")}
+            >
+              {t("seeSubscriptionPlans")}
+            </Button>
+          </Card>
         )}
       </Box>
 
@@ -225,6 +399,14 @@ const MoodJournal = () => {
           entry={null}
           onClose={() => setOpenEntryDialog(false)}
           onSave={handleAddEntry}
+          onError={(message) =>
+            setNotification({
+              open: true,
+              message: message,
+              severity: "warning",
+            })
+          }
+          canAddForDate={canAddEntryForDate}
           moodLevels={MOOD_LEVELS}
           moodFactors={MOOD_FACTORS}
           getMoodColor={getMoodColor}
@@ -253,6 +435,29 @@ const MoodJournal = () => {
         title={t("deleteMoodEntryTitle")}
         message={t("deleteMoodEntryConfirmation")}
       />
+
+      <ConfirmationModal
+        open={confirmModalProps.open}
+        onClose={() =>
+          setConfirmModalProps({ ...confirmModalProps, open: false })
+        }
+        onConfirm={confirmModalProps.onConfirm}
+        itemId={confirmModalProps.itemId}
+        title={confirmModalProps.title}
+        message={confirmModalProps.message}
+        confirmButtonText={confirmModalProps.confirmButtonText}
+        cancelButtonText={confirmModalProps.cancelButtonText}
+        confirmColor={confirmModalProps.confirmColor}
+        type={confirmModalProps.type}
+        warningMessage={confirmModalProps.warningMessage}
+      />
+
+      <NotificationSnackbar
+        open={notification.open}
+        onClose={() => setNotification({ ...notification, open: false })}
+        message={notification.message}
+        severity={notification.severity}
+      />
     </Box>
   );
 };
@@ -265,9 +470,6 @@ const EmptyState = ({ onAddNew }) => {
       <Typography variant="h6" gutterBottom>
         {t("noMoodEntriesFound")}
       </Typography>
-      {/* <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        {t("addYourFirstMoodEntry")}
-      </Typography> */}
       <Button variant="contained" startIcon={<Add />} onClick={onAddNew}>
         {t("addMoodEntry")}
       </Button>

@@ -2,6 +2,22 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { subscriptionAPI } from "../../api/subscription";
 import i18n from "../../i18n/i18n";
 
+const getErrorTranslation = (error) => {
+  if (error && error.errorCode) {
+    switch (error.errorCode) {
+      case "":
+        return i18n.t("");
+      case "":
+        return i18n.t("");
+      case "":
+        return i18n.t("");
+      default:
+        return error.message || i18n.t("anUnexpectedErrorOccurred");
+    }
+  }
+  return error?.message || i18n.t("anUnexpectedErrorOccurred");
+};
+
 export const GetSubscriptionPlans = createAsyncThunk(
   "subscription/GetSubscriptionPlans",
   async (
@@ -15,9 +31,15 @@ export const GetSubscriptionPlans = createAsyncThunk(
       );
 
       if (!response.success) {
-        return rejectWithValue(
-          response.message || "Failed to retrieve subscription plans"
-        );
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message:
+              response.message || "Failed to retrieve subscription plans",
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       return response.data;
@@ -27,7 +49,16 @@ export const GetSubscriptionPlans = createAsyncThunk(
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -46,9 +77,14 @@ export const GetSubscriptionPlan = createAsyncThunk(
       );
 
       if (!response.success) {
-        return rejectWithValue(
-          response.message || "Failed to retrieve subscription plan"
-        );
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message || "Failed to retrieve subscription plan",
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       return response.data;
@@ -58,7 +94,16 @@ export const GetSubscriptionPlan = createAsyncThunk(
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -73,11 +118,28 @@ export const GetSubscriptionPlansByRole = createAsyncThunk(
         languageCode
       );
       if (!response.success) {
-        return rejectWithValue(response.message);
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message,
+          }),
+          errorCode: response.errorCode,
+        });
       }
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || error.message);
+      const errorMessage = error.response?.data?.message || error.message;
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -89,9 +151,15 @@ export const GetCurrentUserSubscription = createAsyncThunk(
       const response = await subscriptionAPI.getCurrentUserSubscription();
 
       if (!response.success) {
-        return rejectWithValue(
-          response.message || "Failed to retrieve current subscription"
-        );
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message:
+              response.message || "Failed to retrieve current subscription",
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       return response.data;
@@ -101,6 +169,8 @@ export const GetCurrentUserSubscription = createAsyncThunk(
           error.response?.data?.message ||
           error.message ||
           i18n.t("anUnexpectedErrorOccurred");
+
+        const errorCode = error.response?.data?.errorCode;
 
         return {
           error: errorMessage,
@@ -117,9 +187,17 @@ export const GetCurrentUserSubscription = createAsyncThunk(
         };
       }
 
-      return rejectWithValue(
-        error.message || i18n.t("anUnexpectedErrorOccurred")
-      );
+      const errorMessage = error.message || i18n.t("anUnexpectedErrorOccurred");
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -131,9 +209,14 @@ export const SubscribeToPlan = createAsyncThunk(
       const response = await subscriptionAPI.subscribeToPlan(subscriptionData);
 
       if (!response.success) {
-        return rejectWithValue(
-          response.message || "Failed to subscribe to plan"
-        );
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message || "Failed to subscribe to plan",
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       return response.data;
@@ -143,7 +226,16 @@ export const SubscribeToPlan = createAsyncThunk(
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -155,9 +247,14 @@ export const CancelSubscription = createAsyncThunk(
       const response = await subscriptionAPI.cancelSubscription();
 
       if (!response.success) {
-        return rejectWithValue(
-          response.message || "Failed to cancel subscription"
-        );
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message || "Failed to cancel subscription",
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       return response.data;
@@ -167,7 +264,16 @@ export const CancelSubscription = createAsyncThunk(
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -179,9 +285,15 @@ export const ToggleAutoRenew = createAsyncThunk(
       const response = await subscriptionAPI.toggleAutoRenew(autoRenew);
 
       if (!response.success) {
-        return rejectWithValue(
-          response.message || "Failed to update auto-renewal settings"
-        );
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message:
+              response.message || "Failed to update auto-renewal settings",
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       return response.data;
@@ -191,7 +303,16 @@ export const ToggleAutoRenew = createAsyncThunk(
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -203,9 +324,14 @@ export const GetBillingHistory = createAsyncThunk(
       const response = await subscriptionAPI.getBillingHistory();
 
       if (!response.success) {
-        return rejectWithValue(
-          response.message || "Failed to retrieve billing history"
-        );
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message || "Failed to retrieve billing history",
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       return response.data;
@@ -215,7 +341,16 @@ export const GetBillingHistory = createAsyncThunk(
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -227,9 +362,14 @@ export const CreatePaymentForm = createAsyncThunk(
       const response = await subscriptionAPI.createPaymentForm(paymentFormData);
 
       if (!response.success) {
-        return rejectWithValue(
-          response.message || "Failed to create payment form"
-        );
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message || "Failed to create payment form",
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       return response.data;
@@ -239,7 +379,16 @@ export const CreatePaymentForm = createAsyncThunk(
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -251,9 +400,14 @@ export const CheckFeatureAccess = createAsyncThunk(
       const response = await subscriptionAPI.checkFeatureAccess(featureName);
 
       if (!response.success) {
-        return rejectWithValue(
-          response.message || "Failed to check feature access"
-        );
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message || "Failed to check feature access",
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       return {
@@ -274,7 +428,16 @@ export const CheckFeatureAccess = createAsyncThunk(
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -286,9 +449,14 @@ export const GetFeatureLimit = createAsyncThunk(
       const response = await subscriptionAPI.getFeatureLimit(featureName);
 
       if (!response.success) {
-        return rejectWithValue(
-          response.message || "Failed to retrieve feature limit"
-        );
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message || "Failed to retrieve feature limit",
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       return {
@@ -309,7 +477,16 @@ export const GetFeatureLimit = createAsyncThunk(
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -351,7 +528,7 @@ const subscriptionSlice = createSlice({
       })
       .addCase(GetSubscriptionPlans.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload?.translatedError || action.payload;
         state.availablePlans = [];
       })
 
@@ -366,7 +543,7 @@ const subscriptionSlice = createSlice({
       })
       .addCase(GetSubscriptionPlan.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload?.translatedError || action.payload;
       })
 
       // GetSubscriptionPlansByRole
@@ -380,8 +557,7 @@ const subscriptionSlice = createSlice({
       })
       .addCase(GetSubscriptionPlansByRole.rejected, (state, action) => {
         state.loading = false;
-        state.error =
-          action.payload || "Failed to get subscription plans by role";
+        state.error = action.payload?.translatedError || action.payload;
       })
 
       // GetCurrentUserSubscription
@@ -403,7 +579,7 @@ const subscriptionSlice = createSlice({
       })
       .addCase(GetCurrentUserSubscription.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload?.translatedError || action.payload;
         state.currentSubscription = {
           subscription: {
             planId: "free",
@@ -426,7 +602,7 @@ const subscriptionSlice = createSlice({
       })
       .addCase(SubscribeToPlan.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload?.translatedError || action.payload;
         state.success = false;
       })
 
@@ -443,7 +619,7 @@ const subscriptionSlice = createSlice({
       })
       .addCase(CancelSubscription.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload?.translatedError || action.payload;
         state.success = false;
       })
 
@@ -462,7 +638,7 @@ const subscriptionSlice = createSlice({
       })
       .addCase(ToggleAutoRenew.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload?.translatedError || action.payload;
         state.success = false;
       })
 
@@ -477,7 +653,7 @@ const subscriptionSlice = createSlice({
       })
       .addCase(GetBillingHistory.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload?.translatedError || action.payload;
         state.billingHistory = [];
       })
 
@@ -494,7 +670,7 @@ const subscriptionSlice = createSlice({
       })
       .addCase(CreatePaymentForm.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload?.translatedError || action.payload;
         state.success = false;
       })
 
@@ -519,7 +695,7 @@ const subscriptionSlice = createSlice({
       })
       .addCase(CheckFeatureAccess.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload?.translatedError || action.payload;
         if (action.meta && action.meta.arg) {
           state.featureAccess = {
             ...state.featureAccess,
@@ -549,7 +725,7 @@ const subscriptionSlice = createSlice({
       })
       .addCase(GetFeatureLimit.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload?.translatedError || action.payload;
         if (action.meta && action.meta.arg) {
           state.featureLimits = {
             ...state.featureLimits,

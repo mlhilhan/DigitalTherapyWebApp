@@ -47,7 +47,6 @@ const MoodChartView = ({ entries, onAddNew, getMoodLabel, theme }) => {
           {t("totalEntries")}: {statistics.totalEntries}
         </Typography>
 
-        {/* En sık kullanılan faktörler */}
         {statistics.factorFrequency &&
           Object.keys(statistics.factorFrequency).length > 0 && (
             <Box sx={{ mt: 2 }}>
@@ -120,7 +119,7 @@ const MoodChartView = ({ entries, onAddNew, getMoodLabel, theme }) => {
             }}
           >
             <Typography variant="body1" sx={{ mb: 2 }}>
-              {t("notEnoughDataForChart")}
+              {t("noMoodEntriesFound")}
             </Typography>
             <Button variant="contained" startIcon={<Add />} onClick={onAddNew}>
               {t("addMoodEntry")}

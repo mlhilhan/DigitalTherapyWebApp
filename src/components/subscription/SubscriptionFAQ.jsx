@@ -26,7 +26,7 @@ const SubscriptionFAQ = () => {
     },
     {
       question: t("isThereARefundPolicy"),
-      answer: t("yesWeOffer14DayMoneyBackGuarantee"),
+      answer: t("noWeNotOfferMoneyBackGuarantee"),
     },
     {
       question: t("canIUseTheAppOnMultipleDevices"),

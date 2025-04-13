@@ -2,6 +2,23 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { emotionalStateAPI } from "../../api/emotionalState";
 import i18n from "../../i18n/i18n";
 
+const getErrorTranslation = (error) => {
+  if (error && error.errorCode) {
+    switch (error.errorCode) {
+      case "DAILY_LIMIT_REACHED":
+        return i18n.t("dailyMoodEntryLimitReached");
+      case "FEATURE_ACCESS_DENIED":
+        return i18n.t("featureAccessDenied");
+      case "SUBSCRIPTION_FEATURE_RESTRICTED":
+        return i18n.t("subscriptionFeatureRestricted");
+      default:
+        return error.message || i18n.t("anUnexpectedErrorOccurred");
+    }
+  }
+
+  return error?.message || i18n.t("anUnexpectedErrorOccurred");
+};
+
 export const GetAllEmotionalStates = createAsyncThunk(
   "emotionalState/GetAllEmotionalStates",
   async (_, { rejectWithValue }) => {
@@ -9,9 +26,14 @@ export const GetAllEmotionalStates = createAsyncThunk(
       const response = await emotionalStateAPI.getAllEntries();
 
       if (!response.success) {
-        return rejectWithValue(
-          response.message || "Failed to fetch mood entries"
-        );
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message,
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       return response.data;
@@ -21,7 +43,16 @@ export const GetAllEmotionalStates = createAsyncThunk(
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -33,9 +64,14 @@ export const GetEmotionalStateById = createAsyncThunk(
       const response = await emotionalStateAPI.getEntryById(id);
 
       if (!response.success) {
-        return rejectWithValue(
-          response.message || "Failed to fetch mood entry"
-        );
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message,
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       return response.data;
@@ -45,7 +81,16 @@ export const GetEmotionalStateById = createAsyncThunk(
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -60,9 +105,14 @@ export const GetEmotionalStatesByDateRange = createAsyncThunk(
       );
 
       if (!response.success) {
-        return rejectWithValue(
-          response.message || "Failed to fetch mood entries for date range"
-        );
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message,
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       return response.data;
@@ -72,7 +122,16 @@ export const GetEmotionalStatesByDateRange = createAsyncThunk(
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -84,9 +143,14 @@ export const GetBookmarkedEmotionalStates = createAsyncThunk(
       const response = await emotionalStateAPI.getBookmarkedEntries();
 
       if (!response.success) {
-        return rejectWithValue(
-          response.message || "Failed to fetch bookmarked entries"
-        );
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message,
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       return response.data;
@@ -96,7 +160,16 @@ export const GetBookmarkedEmotionalStates = createAsyncThunk(
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -111,9 +184,14 @@ export const GetEmotionalStateStatistics = createAsyncThunk(
       );
 
       if (!response.success) {
-        return rejectWithValue(
-          response.message || "Failed to fetch mood statistics"
-        );
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message,
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       return response.data;
@@ -123,7 +201,16 @@ export const GetEmotionalStateStatistics = createAsyncThunk(
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -135,9 +222,14 @@ export const CreateEmotionalState = createAsyncThunk(
       const response = await emotionalStateAPI.createEntry(entryData);
 
       if (!response.success) {
-        return rejectWithValue(
-          response.message || "Failed to create mood entry"
-        );
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message,
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       dispatch(GetAllEmotionalStates());
@@ -149,7 +241,16 @@ export const CreateEmotionalState = createAsyncThunk(
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -161,9 +262,14 @@ export const UpdateEmotionalState = createAsyncThunk(
       const response = await emotionalStateAPI.updateEntry(id, entryData);
 
       if (!response.success) {
-        return rejectWithValue(
-          response.message || "Failed to update mood entry"
-        );
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message,
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       dispatch(GetAllEmotionalStates());
@@ -175,7 +281,16 @@ export const UpdateEmotionalState = createAsyncThunk(
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -187,9 +302,14 @@ export const DeleteEmotionalState = createAsyncThunk(
       const response = await emotionalStateAPI.deleteEntry(id);
 
       if (!response.success) {
-        return rejectWithValue(
-          response.message || "Failed to delete mood entry"
-        );
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message,
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       dispatch(GetAllEmotionalStates());
@@ -201,7 +321,16 @@ export const DeleteEmotionalState = createAsyncThunk(
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -213,7 +342,14 @@ export const ToggleBookmarkEmotionalState = createAsyncThunk(
       const response = await emotionalStateAPI.toggleBookmark(id);
 
       if (!response.success) {
-        return rejectWithValue(response.message || "Failed to toggle bookmark");
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message,
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       dispatch(GetAllEmotionalStates());
@@ -225,7 +361,16 @@ export const ToggleBookmarkEmotionalState = createAsyncThunk(
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -280,7 +425,7 @@ const emotionalStateSlice = createSlice({
       })
       .addCase(GetAllEmotionalStates.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload?.translatedError || action.payload;
       })
 
       // GetEmotionalStateById
@@ -294,7 +439,7 @@ const emotionalStateSlice = createSlice({
       })
       .addCase(GetEmotionalStateById.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload?.translatedError || action.payload;
       })
 
       // GetEmotionalStatesByDateRange
@@ -308,7 +453,7 @@ const emotionalStateSlice = createSlice({
       })
       .addCase(GetEmotionalStatesByDateRange.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload?.translatedError || action.payload;
       })
 
       // GetBookmarkedEmotionalStates
@@ -322,7 +467,7 @@ const emotionalStateSlice = createSlice({
       })
       .addCase(GetBookmarkedEmotionalStates.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload?.translatedError || action.payload;
       })
 
       // GetEmotionalStateStatistics
@@ -336,7 +481,7 @@ const emotionalStateSlice = createSlice({
       })
       .addCase(GetEmotionalStateStatistics.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload?.translatedError || action.payload;
       })
 
       // CreateEmotionalState
@@ -351,7 +496,7 @@ const emotionalStateSlice = createSlice({
       })
       .addCase(CreateEmotionalState.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload?.translatedError || action.payload;
         state.success = false;
       })
 
@@ -367,7 +512,7 @@ const emotionalStateSlice = createSlice({
       })
       .addCase(UpdateEmotionalState.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload?.translatedError || action.payload;
         state.success = false;
       })
 
@@ -390,7 +535,7 @@ const emotionalStateSlice = createSlice({
       })
       .addCase(DeleteEmotionalState.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload?.translatedError || action.payload;
         state.success = false;
       })
 
@@ -405,7 +550,7 @@ const emotionalStateSlice = createSlice({
       })
       .addCase(ToggleBookmarkEmotionalState.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload?.translatedError || action.payload;
       });
   },
 });

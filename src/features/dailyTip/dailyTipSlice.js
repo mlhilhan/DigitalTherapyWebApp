@@ -2,6 +2,22 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { dailyTipAPI } from "../../api/dailyTip";
 import i18n from "../../i18n/i18n";
 
+const getErrorTranslation = (error) => {
+  if (error && error.errorCode) {
+    switch (error.errorCode) {
+      case "":
+        return i18n.t("");
+      case "":
+        return i18n.t("");
+      case "":
+        return i18n.t("");
+      default:
+        return error.message || i18n.t("anUnexpectedErrorOccurred");
+    }
+  }
+  return error?.message || i18n.t("anUnexpectedErrorOccurred");
+};
+
 export const GetCategories = createAsyncThunk(
   "dailyTip/GetCategories",
   async (languageCode = "en", { rejectWithValue }) => {
@@ -9,7 +25,14 @@ export const GetCategories = createAsyncThunk(
       const response = await dailyTipAPI.getCategories(languageCode);
 
       if (!response.success) {
-        return rejectWithValue(response.message || "Kategoriler alınamadı");
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message || "Kategoriler alınamadı",
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       return response.data;
@@ -19,7 +42,16 @@ export const GetCategories = createAsyncThunk(
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -31,7 +63,14 @@ export const GetAllTips = createAsyncThunk(
       const response = await dailyTipAPI.getAllTips(languageCode);
 
       if (!response.success) {
-        return rejectWithValue(response.message || "İpuçları alınamadı");
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message || "İpuçları alınamadı",
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       return response.data;
@@ -41,7 +80,16 @@ export const GetAllTips = createAsyncThunk(
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -56,9 +104,14 @@ export const GetTipsByCategory = createAsyncThunk(
       );
 
       if (!response.success) {
-        return rejectWithValue(
-          response.message || "Kategoriye ait ipuçları alınamadı"
-        );
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message || "Kategoriye ait ipuçları alınamadı",
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       return response.data;
@@ -68,7 +121,16 @@ export const GetTipsByCategory = createAsyncThunk(
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -80,7 +142,14 @@ export const GetTipById = createAsyncThunk(
       const response = await dailyTipAPI.getTipById(id, languageCode);
 
       if (!response.success) {
-        return rejectWithValue(response.message || "İpucu alınamadı");
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message || "İpucu alınamadı",
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       return response.data;
@@ -90,7 +159,16 @@ export const GetTipById = createAsyncThunk(
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -102,7 +180,14 @@ export const GetTipOfTheDay = createAsyncThunk(
       const response = await dailyTipAPI.getTipOfTheDay(languageCode);
 
       if (!response.success) {
-        return rejectWithValue(response.message || "Günün ipucu alınamadı");
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message || "Günün ipucu alınamadı",
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       return response.data;
@@ -112,7 +197,16 @@ export const GetTipOfTheDay = createAsyncThunk(
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -124,9 +218,14 @@ export const GetBookmarkedTips = createAsyncThunk(
       const response = await dailyTipAPI.getBookmarkedTips(languageCode);
 
       if (!response.success) {
-        return rejectWithValue(
-          response.message || "Yer imli ipuçları alınamadı"
-        );
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message || "Yer imli ipuçları alınamadı",
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       return response.data;
@@ -136,7 +235,16 @@ export const GetBookmarkedTips = createAsyncThunk(
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -148,7 +256,14 @@ export const ToggleBookmark = createAsyncThunk(
       const response = await dailyTipAPI.toggleBookmark(id);
 
       if (!response.success) {
-        return rejectWithValue(response.message || "Bookmark operation failed");
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message || "Bookmark operation failed",
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       return {
@@ -161,7 +276,17 @@ export const ToggleBookmark = createAsyncThunk(
         error.response?.data?.message ||
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
-      return rejectWithValue(errorMessage);
+
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -173,7 +298,14 @@ export const CreateTip = createAsyncThunk(
       const response = await dailyTipAPI.createTip(tipData);
 
       if (!response.success) {
-        return rejectWithValue(response.message || "İpucu oluşturulamadı");
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message || "İpucu oluşturulamadı",
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       return response.data;
@@ -183,7 +315,16 @@ export const CreateTip = createAsyncThunk(
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -195,7 +336,14 @@ export const CreateCategory = createAsyncThunk(
       const response = await dailyTipAPI.createCategory(categoryData);
 
       if (!response.success) {
-        return rejectWithValue(response.message || "Kategori oluşturulamadı");
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message || "Kategori oluşturulamadı",
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       return response.data;
@@ -205,7 +353,16 @@ export const CreateCategory = createAsyncThunk(
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -217,7 +374,14 @@ export const UpdateTip = createAsyncThunk(
       const response = await dailyTipAPI.updateTip(id, tipData);
 
       if (!response.success) {
-        return rejectWithValue(response.message || "İpucu güncellenemedi");
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message || "İpucu güncellenemedi",
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       return response.data;
@@ -227,7 +391,16 @@ export const UpdateTip = createAsyncThunk(
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -239,7 +412,14 @@ export const UpdateCategory = createAsyncThunk(
       const response = await dailyTipAPI.updateCategory(id, categoryData);
 
       if (!response.success) {
-        return rejectWithValue(response.message || "Kategori güncellenemedi");
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message || "Kategori güncellenemedi",
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       return response.data;
@@ -249,7 +429,16 @@ export const UpdateCategory = createAsyncThunk(
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -261,7 +450,14 @@ export const DeleteTip = createAsyncThunk(
       const response = await dailyTipAPI.deleteTip(id);
 
       if (!response.success) {
-        return rejectWithValue(response.message || "İpucu silinemedi");
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message || "İpucu silinemedi",
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       return response.data;
@@ -271,7 +467,16 @@ export const DeleteTip = createAsyncThunk(
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -283,7 +488,14 @@ export const DeleteCategory = createAsyncThunk(
       const response = await dailyTipAPI.deleteCategory(id);
 
       if (!response.success) {
-        return rejectWithValue(response.message || "Kategori silinemedi");
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message || "Kategori silinemedi",
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       return response.data;
@@ -293,7 +505,16 @@ export const DeleteCategory = createAsyncThunk(
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -333,7 +554,7 @@ const dailyTipSlice = createSlice({
       })
       .addCase(GetCategories.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload?.translatedError || action.payload;
       })
 
       // GetAllTips
@@ -347,7 +568,7 @@ const dailyTipSlice = createSlice({
       })
       .addCase(GetAllTips.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload?.translatedError || action.payload;
       })
 
       // GetTipsByCategory
@@ -361,7 +582,7 @@ const dailyTipSlice = createSlice({
       })
       .addCase(GetTipsByCategory.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload?.translatedError || action.payload;
       })
 
       // GetTipById

@@ -2,6 +2,22 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { psychologistProfileAPI } from "../../api/psychologistProfile";
 import i18n from "../../i18n/i18n";
 
+const getErrorTranslation = (error) => {
+  if (error && error.errorCode) {
+    switch (error.errorCode) {
+      case "":
+        return i18n.t("");
+      case "":
+        return i18n.t("");
+      case "":
+        return i18n.t("");
+      default:
+        return error.message || i18n.t("anUnexpectedErrorOccurred");
+    }
+  }
+  return error?.message || i18n.t("anUnexpectedErrorOccurred");
+};
+
 export const GetCurrentPsychologistProfile = createAsyncThunk(
   "psychologistProfile/GetCurrentPsychologistProfile",
   async (_, { rejectWithValue }) => {
@@ -9,9 +25,14 @@ export const GetCurrentPsychologistProfile = createAsyncThunk(
       const response = await psychologistProfileAPI.getCurrentProfile();
 
       if (!response.success) {
-        return rejectWithValue(
-          response.message || "Profil bilgileri alınamadı"
-        );
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message || "Profil bilgileri alınamadı",
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       return response.data;
@@ -21,7 +42,16 @@ export const GetCurrentPsychologistProfile = createAsyncThunk(
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -33,9 +63,14 @@ export const GetPsychologistProfile = createAsyncThunk(
       const response = await psychologistProfileAPI.getProfileById(userId);
 
       if (!response.success) {
-        return rejectWithValue(
-          response.message || "Profil bilgileri alınamadı"
-        );
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message || "Profil bilgileri alınamadı",
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       return response.data;
@@ -45,7 +80,16 @@ export const GetPsychologistProfile = createAsyncThunk(
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -63,7 +107,14 @@ export const UpdatePsychologistProfile = createAsyncThunk(
       );
 
       if (!response.success) {
-        return rejectWithValue(response.message || "Profil güncellenemedi");
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message || "Profil güncellenemedi",
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       return response.data;
@@ -73,7 +124,16 @@ export const UpdatePsychologistProfile = createAsyncThunk(
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -88,7 +148,14 @@ export const UploadPsychologistProfileImage = createAsyncThunk(
       );
 
       if (!response.success) {
-        return rejectWithValue(response.message || "Profil resmi yüklenemedi");
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message || "Profil resmi yüklenemedi",
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       await dispatch(GetCurrentPsychologistProfile());
@@ -100,7 +167,16 @@ export const UploadPsychologistProfileImage = createAsyncThunk(
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -115,9 +191,14 @@ export const UpdatePsychologistSpecialties = createAsyncThunk(
       );
 
       if (!response.success) {
-        return rejectWithValue(
-          response.message || "Uzmanlık alanları güncellenemedi"
-        );
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message || "Uzmanlık alanları güncellenemedi",
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       await dispatch(GetCurrentPsychologistProfile());
@@ -129,7 +210,16 @@ export const UpdatePsychologistSpecialties = createAsyncThunk(
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -152,9 +242,14 @@ export const UpdatePsychologistAvailability = createAsyncThunk(
       );
 
       if (!response.success) {
-        return rejectWithValue(
-          response.message || "Uygunluk durumu güncellenemedi"
-        );
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message || "Uygunluk durumu güncellenemedi",
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       await dispatch(GetCurrentPsychologistProfile());
@@ -166,7 +261,16 @@ export const UpdatePsychologistAvailability = createAsyncThunk(
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -184,9 +288,14 @@ export const UpdatePsychologistLanguagePreference = createAsyncThunk(
         profileData
       );
       if (!response.success) {
-        return rejectWithValue(
-          response.message || "Dil tercihi güncellenemedi"
-        );
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message || "Dil tercihi güncellenemedi",
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       i18n.changeLanguage(language);
@@ -199,7 +308,16 @@ export const UpdatePsychologistLanguagePreference = createAsyncThunk(
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -211,9 +329,14 @@ export const GetAvailablePsychologists = createAsyncThunk(
       const response = await psychologistProfileAPI.getAvailablePsychologists();
 
       if (!response.success) {
-        return rejectWithValue(
-          response.message || "Uygun psikologlar alınamadı"
-        );
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message || "Uygun psikologlar alınamadı",
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       return response.data;
@@ -223,7 +346,16 @@ export const GetAvailablePsychologists = createAsyncThunk(
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -237,7 +369,14 @@ export const GetPsychologistsBySpecialty = createAsyncThunk(
       );
 
       if (!response.success) {
-        return rejectWithValue(response.message || "Psikologlar alınamadı");
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message || "Psikologlar alınamadı",
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       return response.data;
@@ -247,7 +386,16 @@ export const GetPsychologistsBySpecialty = createAsyncThunk(
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -262,9 +410,14 @@ export const GetPsychologistsByInstitution = createAsyncThunk(
         );
 
       if (!response.success) {
-        return rejectWithValue(
-          response.message || "Kuruma ait psikologlar alınamadı"
-        );
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message || "Kuruma ait psikologlar alınamadı",
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       return response.data;
@@ -274,7 +427,16 @@ export const GetPsychologistsByInstitution = createAsyncThunk(
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -316,7 +478,7 @@ const psychologistProfileSlice = createSlice({
       })
       .addCase(GetCurrentPsychologistProfile.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload?.translatedError || action.payload;
         state.languageLoaded = true;
       })
 
@@ -331,7 +493,7 @@ const psychologistProfileSlice = createSlice({
       })
       .addCase(GetPsychologistProfile.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload?.translatedError || action.payload;
       })
 
       // UpdatePsychologistProfile
@@ -347,7 +509,7 @@ const psychologistProfileSlice = createSlice({
       })
       .addCase(UpdatePsychologistProfile.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload?.translatedError || action.payload;
         state.success = false;
       })
 
@@ -363,7 +525,7 @@ const psychologistProfileSlice = createSlice({
       })
       .addCase(UploadPsychologistProfileImage.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload?.translatedError || action.payload;
         state.success = false;
       })
 
@@ -379,7 +541,7 @@ const psychologistProfileSlice = createSlice({
       })
       .addCase(UpdatePsychologistSpecialties.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload?.translatedError || action.payload;
         state.success = false;
       })
 
@@ -395,7 +557,7 @@ const psychologistProfileSlice = createSlice({
       })
       .addCase(UpdatePsychologistAvailability.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload?.translatedError || action.payload;
         state.success = false;
       })
 
@@ -410,7 +572,7 @@ const psychologistProfileSlice = createSlice({
       })
       .addCase(GetAvailablePsychologists.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload?.translatedError || action.payload;
       })
 
       // GetPsychologistsBySpecialty
@@ -424,7 +586,7 @@ const psychologistProfileSlice = createSlice({
       })
       .addCase(GetPsychologistsBySpecialty.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload?.translatedError || action.payload;
       })
 
       // GetPsychologistsByInstitution
@@ -438,7 +600,7 @@ const psychologistProfileSlice = createSlice({
       })
       .addCase(GetPsychologistsByInstitution.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload?.translatedError || action.payload;
       })
 
       // UpdatePsychologistLanguagePreference
@@ -454,7 +616,7 @@ const psychologistProfileSlice = createSlice({
         UpdatePsychologistLanguagePreference.rejected,
         (state, action) => {
           state.loading = false;
-          state.error = action.payload;
+          state.error = action.payload?.translatedError || action.payload;
         }
       );
   },

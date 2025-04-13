@@ -2,6 +2,22 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { therapyChatAPI } from "../../api/therapyChat";
 import i18n from "../../i18n/i18n";
 
+const getErrorTranslation = (error) => {
+  if (error && error.errorCode) {
+    switch (error.errorCode) {
+      case "":
+        return i18n.t("");
+      case "":
+        return i18n.t("");
+      case "":
+        return i18n.t("");
+      default:
+        return error.message || i18n.t("anUnexpectedErrorOccurred");
+    }
+  }
+  return error?.message || i18n.t("anUnexpectedErrorOccurred");
+};
+
 export const StartChatSession = createAsyncThunk(
   "therapyChat/StartChatSession",
   async (forceNew = false, { rejectWithValue }) => {
@@ -9,9 +25,14 @@ export const StartChatSession = createAsyncThunk(
       const response = await therapyChatAPI.startSession(forceNew);
 
       if (!response.success) {
-        return rejectWithValue(
-          response.message || "Terapi oturumu başlatılamadı"
-        );
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message || "Terapi oturumu başlatılamadı",
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       return response.data;
@@ -21,7 +42,16 @@ export const StartChatSession = createAsyncThunk(
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -33,7 +63,14 @@ export const SendChatMessage = createAsyncThunk(
       const response = await therapyChatAPI.sendMessage(message, sessionId);
 
       if (!response.success) {
-        return rejectWithValue(response.message || "Mesaj gönderilemedi");
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message || "Mesaj gönderilemedi",
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       return response.data;
@@ -43,7 +80,16 @@ export const SendChatMessage = createAsyncThunk(
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -55,9 +101,14 @@ export const GetChatSessions = createAsyncThunk(
       const response = await therapyChatAPI.getSessions();
 
       if (!response.success) {
-        return rejectWithValue(
-          response.message || "Terapi oturumları alınamadı"
-        );
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message || "Terapi oturumları alınamadı",
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       return response.data;
@@ -67,7 +118,16 @@ export const GetChatSessions = createAsyncThunk(
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -79,9 +139,14 @@ export const GetChatMessages = createAsyncThunk(
       const response = await therapyChatAPI.getMessages(sessionId);
 
       if (!response.success) {
-        return rejectWithValue(
-          response.message || "Oturum mesajları alınamadı"
-        );
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message || "Oturum mesajları alınamadı",
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       return response.data;
@@ -91,7 +156,16 @@ export const GetChatMessages = createAsyncThunk(
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -103,7 +177,14 @@ export const EndChatSession = createAsyncThunk(
       const response = await therapyChatAPI.endSession(sessionId);
 
       if (!response.success) {
-        return rejectWithValue(response.message || "Oturum sonlandırılamadı");
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message || "Oturum sonlandırılamadı",
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       await dispatch(GetChatSessions());
@@ -115,7 +196,16 @@ export const EndChatSession = createAsyncThunk(
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -127,7 +217,14 @@ export const ActivateSession = createAsyncThunk(
       const response = await therapyChatAPI.activateSession(sessionId);
 
       if (!response.success) {
-        return rejectWithValue(response.message || "Oturum aktifleştirilemedi");
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message || "Oturum aktifleştirilemedi",
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       await dispatch(GetChatSessions());
@@ -139,7 +236,16 @@ export const ActivateSession = createAsyncThunk(
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -151,7 +257,14 @@ export const ClearAllSessions = createAsyncThunk(
       const response = await therapyChatAPI.clearAllSessions();
 
       if (!response.success) {
-        return rejectWithValue(response.message || "Oturumlar temizlenemedi");
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message || "Oturumlar temizlenemedi",
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       await dispatch(GetChatSessions());
@@ -163,7 +276,16 @@ export const ClearAllSessions = createAsyncThunk(
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -175,7 +297,14 @@ export const CompleteSession = createAsyncThunk(
       const response = await therapyChatAPI.completeSession(sessionId);
 
       if (!response.success) {
-        return rejectWithValue(response.message || "Oturum tamamlanamadı");
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message || "Oturum tamamlanamadı",
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       await dispatch(GetChatSessions());
@@ -187,7 +316,16 @@ export const CompleteSession = createAsyncThunk(
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -199,7 +337,14 @@ export const ClearAiSession = createAsyncThunk(
       const response = await therapyChatAPI.clearAiSession(sessionId);
 
       if (!response.success) {
-        return rejectWithValue(response.message || "Oturum arşivlenemedi");
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message || "Oturum arşivlenemedi",
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       await dispatch(GetChatSessions());
@@ -211,7 +356,16 @@ export const ClearAiSession = createAsyncThunk(
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -291,7 +445,7 @@ const therapyChatSlice = createSlice({
       })
       .addCase(StartChatSession.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload?.translatedError || action.payload;
       })
 
       // SendChatMessage
@@ -305,7 +459,7 @@ const therapyChatSlice = createSlice({
       })
       .addCase(SendChatMessage.rejected, (state, action) => {
         state.sending = false;
-        state.error = action.payload;
+        state.error = action.payload?.translatedError || action.payload;
       })
 
       // GetChatSessions
@@ -332,7 +486,7 @@ const therapyChatSlice = createSlice({
       })
       .addCase(GetChatSessions.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload?.translatedError || action.payload;
       })
 
       // GetChatMessages
@@ -355,7 +509,7 @@ const therapyChatSlice = createSlice({
       })
       .addCase(GetChatMessages.rejected, (state, action) => {
         state.loadingMessages = false;
-        state.error = action.payload;
+        state.error = action.payload?.translatedError || action.payload;
       })
 
       // EndChatSession
@@ -370,7 +524,7 @@ const therapyChatSlice = createSlice({
       })
       .addCase(EndChatSession.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload?.translatedError || action.payload;
       })
 
       // ActivateSession
@@ -385,7 +539,7 @@ const therapyChatSlice = createSlice({
       })
       .addCase(ActivateSession.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload?.translatedError || action.payload;
       })
 
       // ClearAllSessions
@@ -401,7 +555,7 @@ const therapyChatSlice = createSlice({
       })
       .addCase(ClearAllSessions.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload?.translatedError || action.payload;
       })
 
       // CompleteSession
@@ -434,7 +588,7 @@ const therapyChatSlice = createSlice({
       })
       .addCase(CompleteSession.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload?.translatedError || action.payload;
       })
 
       // ClearAiSession
@@ -456,7 +610,7 @@ const therapyChatSlice = createSlice({
       })
       .addCase(ClearAiSession.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload?.translatedError || action.payload;
       });
   },
 });

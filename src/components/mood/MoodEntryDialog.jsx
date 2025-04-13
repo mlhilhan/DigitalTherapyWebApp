@@ -16,8 +16,6 @@ import {
   IconButton,
   ToggleButtonGroup,
   ToggleButton,
-  Snackbar,
-  Alert,
 } from "@mui/material";
 import { Close } from "@mui/icons-material";
 import { useTranslation } from "react-i18next";
@@ -36,6 +34,8 @@ const MoodEntryDialog = ({
   getMoodColor,
   getMoodLabel,
   moodVal,
+  onError,
+  canAddForDate,
 }) => {
   const { t } = useTranslation();
   const [moodValue, setMoodValue] = useState(moodVal ? moodVal : 3);
@@ -43,7 +43,6 @@ const MoodEntryDialog = ({
   const [moodNotes, setMoodNotes] = useState("");
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [isBookmarked, setIsBookmarked] = useState(false);
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
   const { error, success } = useSelector((state) => state.emotionalState);
 
   useEffect(() => {
@@ -64,11 +63,18 @@ const MoodEntryDialog = ({
 
   useEffect(() => {
     if (error) {
-      setSnackbarOpen(true);
+      onError(error);
     }
-  }, [error]);
+  }, [error, onError]);
 
   const handleSave = () => {
+    const canAddForSelectedDate = canAddForDate(selectedDate);
+
+    if (!canAddForSelectedDate) {
+      onError(t("dailyLimitReachedForSelectedDate"));
+      return;
+    }
+
     const formData = {
       moodLevel: moodValue,
       factors: moodFactorValues,
@@ -92,10 +98,6 @@ const MoodEntryDialog = ({
 
   const handleFactorChange = (event) => {
     setMoodFactorValues(event.target.value);
-  };
-
-  const handleCloseSnackbar = () => {
-    setSnackbarOpen(false);
   };
 
   return (
@@ -262,21 +264,6 @@ const MoodEntryDialog = ({
           </Button>
         </DialogActions>
       </Dialog>
-
-      <Snackbar
-        open={snackbarOpen}
-        autoHideDuration={6000}
-        onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-      >
-        <Alert
-          onClose={handleCloseSnackbar}
-          severity="error"
-          sx={{ width: "100%" }}
-        >
-          {error}
-        </Alert>
-      </Snackbar>
     </>
   );
 };

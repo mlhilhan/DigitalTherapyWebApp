@@ -13,6 +13,7 @@ import {
   MenuItem,
   useMediaQuery,
   useTheme,
+  Badge,
 } from "@mui/material";
 import {
   Add,
@@ -20,6 +21,7 @@ import {
   Timeline,
   CalendarMonth,
   BarChart,
+  Lock,
 } from "@mui/icons-material";
 import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
@@ -34,6 +36,7 @@ const MoodJournalHeader = ({
   onFilterChange,
   onAddNew,
   patientName,
+  hasAdvancedViewsAccess,
 }) => {
   const { t } = useTranslation();
   const theme = useTheme();
@@ -42,6 +45,10 @@ const MoodJournalHeader = ({
   const { loading } = useSelector((state) => state.emotionalState);
 
   const handleViewModeChange = (event, newMode) => {
+    if (newMode !== "journal" && !hasAdvancedViewsAccess) {
+      return;
+    }
+
     if (newMode) onViewModeChange(newMode);
   };
 
@@ -136,14 +143,82 @@ const MoodJournalHeader = ({
                     <Timeline />
                   </Tooltip>
                 </ToggleButton>
-                <ToggleButton value="calendar">
-                  <Tooltip title={t("calendarView")}>
-                    <CalendarMonth />
+
+                <ToggleButton
+                  value="calendar"
+                  disabled={!hasAdvancedViewsAccess}
+                  sx={{
+                    position: "relative",
+                    ...(!hasAdvancedViewsAccess && {
+                      opacity: 0.6,
+                      "&::after": {
+                        content: '""',
+                        position: "absolute",
+                        top: -8,
+                        right: -8,
+                        width: 16,
+                        height: 16,
+                        borderRadius: "50%",
+                        backgroundColor: theme.palette.warning.main,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      },
+                    }),
+                  }}
+                >
+                  <Tooltip
+                    title={
+                      hasAdvancedViewsAccess
+                        ? t("calendarView")
+                        : t("upgradeToAccessCalendarView")
+                    }
+                  >
+                    <Box sx={{ display: "flex", alignItems: "center" }}>
+                      {!hasAdvancedViewsAccess && (
+                        <Lock fontSize="small" sx={{ mr: 0.5, fontSize: 14 }} />
+                      )}
+                      <CalendarMonth />
+                    </Box>
                   </Tooltip>
                 </ToggleButton>
-                <ToggleButton value="chart">
-                  <Tooltip title={t("chartView")}>
-                    <BarChart />
+
+                <ToggleButton
+                  value="chart"
+                  disabled={!hasAdvancedViewsAccess}
+                  sx={{
+                    position: "relative",
+                    ...(!hasAdvancedViewsAccess && {
+                      opacity: 0.6,
+                      "&::after": {
+                        content: '""',
+                        position: "absolute",
+                        top: -8,
+                        right: -8,
+                        width: 16,
+                        height: 16,
+                        borderRadius: "50%",
+                        backgroundColor: theme.palette.warning.main,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      },
+                    }),
+                  }}
+                >
+                  <Tooltip
+                    title={
+                      hasAdvancedViewsAccess
+                        ? t("chartView")
+                        : t("upgradeToAccessChartView")
+                    }
+                  >
+                    <Box sx={{ display: "flex", alignItems: "center" }}>
+                      {!hasAdvancedViewsAccess && (
+                        <Lock fontSize="small" sx={{ mr: 0.5, fontSize: 14 }} />
+                      )}
+                      <BarChart />
+                    </Box>
                   </Tooltip>
                 </ToggleButton>
               </ToggleButtonGroup>

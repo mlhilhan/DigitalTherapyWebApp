@@ -4,6 +4,22 @@ import config from "../../config";
 import i18n from "../../i18n/i18n";
 import { getUserCountryFromBrowser } from "../../utils/countryUtils";
 
+const getErrorTranslation = (error) => {
+  if (error && error.errorCode) {
+    switch (error.errorCode) {
+      case "":
+        return i18n.t("");
+      case "":
+        return i18n.t("");
+      case "":
+        return i18n.t("");
+      default:
+        return error.message || i18n.t("anUnexpectedErrorOccurred");
+    }
+  }
+  return error?.message || i18n.t("anUnexpectedErrorOccurred");
+};
+
 export const GetCurrentPatientProfile = createAsyncThunk(
   "profile/GetCurrentPatientProfile",
   async (_, { rejectWithValue }) => {
@@ -11,9 +27,14 @@ export const GetCurrentPatientProfile = createAsyncThunk(
       const response = await patientProfileAPI.getCurrentProfile();
 
       if (!response.success) {
-        return rejectWithValue(
-          response.message || "Profil bilgileri alınamadı"
-        );
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message || "Profil bilgileri alınamadı",
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       return response.data;
@@ -23,7 +44,16 @@ export const GetCurrentPatientProfile = createAsyncThunk(
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -35,9 +65,14 @@ export const GetPatientProfile = createAsyncThunk(
       const response = await patientProfileAPI.getProfileById(userId);
 
       if (!response.success) {
-        return rejectWithValue(
-          response.message || "Profil bilgileri alınamadı"
-        );
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message || "Profil bilgileri alınamadı",
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       return response.data;
@@ -47,7 +82,16 @@ export const GetPatientProfile = createAsyncThunk(
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -63,7 +107,12 @@ export const UpdatePatientProfile = createAsyncThunk(
 
       if (!response.success) {
         return rejectWithValue({
-          message: response.message || "Profil güncellenemedi",
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message || "Profil güncellenemedi",
+          }),
+          errorCode: response.errorCode,
           statusCode: 200,
         });
       }
@@ -75,7 +124,16 @@ export const UpdatePatientProfile = createAsyncThunk(
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -90,7 +148,14 @@ export const UploadProfileImageX = createAsyncThunk(
       );
 
       if (!response.success) {
-        return rejectWithValue(response.message || "Profil resmi yüklenemedi");
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message || "Profil resmi yüklenemedi",
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       return response.data;
@@ -100,7 +165,16 @@ export const UploadProfileImageX = createAsyncThunk(
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -115,7 +189,14 @@ export const UploadProfileImage = createAsyncThunk(
       const response = await patientProfileAPI.uploadProfileImage(id, formData);
 
       if (!response.success) {
-        return rejectWithValue(response.message || "Profil resmi yüklenemedi");
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message || "Profil resmi yüklenemedi",
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       const baseUrl = config.apiBaseUrl;
@@ -130,7 +211,16 @@ export const UploadProfileImage = createAsyncThunk(
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -144,7 +234,14 @@ export const GetPatientsByPsychologist = createAsyncThunk(
       );
 
       if (!response.success) {
-        return rejectWithValue(response.message || "Hasta listesi alınamadı");
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message || "Hasta listesi alınamadı",
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       return response.data;
@@ -154,7 +251,16 @@ export const GetPatientsByPsychologist = createAsyncThunk(
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -168,7 +274,14 @@ export const GetPatientsByInstitution = createAsyncThunk(
       );
 
       if (!response.success) {
-        return rejectWithValue(response.message || "Hasta listesi alınamadı");
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message || "Hasta listesi alınamadı",
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       return response.data;
@@ -178,7 +291,16 @@ export const GetPatientsByInstitution = createAsyncThunk(
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -189,9 +311,14 @@ export const UpdateLanguagePreference = createAsyncThunk(
     try {
       const response = await patientProfileAPI.updateProfileLanguage(language);
       if (!response.success) {
-        return rejectWithValue(
-          response.message || "Dil tercihi güncellenemedi"
-        );
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message || "Dil tercihi güncellenemedi",
+          }),
+          errorCode: response.errorCode,
+        });
       }
       i18n.changeLanguage(language);
       await dispatch(GetCurrentPatientProfile());
@@ -202,7 +329,16 @@ export const UpdateLanguagePreference = createAsyncThunk(
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -216,9 +352,14 @@ export const UpdateUserCountry = createAsyncThunk(
       const response = await patientProfileAPI.updateProfile(formData);
 
       if (!response.success) {
-        return rejectWithValue(
-          response.message || "Ülke bilgisi güncellenemedi"
-        );
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message || "Ülke bilgisi güncellenemedi",
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       await dispatch(GetCurrentPatientProfile());
@@ -230,7 +371,16 @@ export const UpdateUserCountry = createAsyncThunk(
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -280,7 +430,7 @@ const profileSlice = createSlice({
       })
       .addCase(GetCurrentPatientProfile.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload?.translatedError || action.payload;
         state.languageLoaded = true;
       })
 
@@ -295,7 +445,7 @@ const profileSlice = createSlice({
       })
       .addCase(GetPatientProfile.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload?.translatedError || action.payload;
       })
 
       // UpdatePatientProfile
@@ -309,14 +459,13 @@ const profileSlice = createSlice({
         state.profile = action.payload;
         state.success = true;
 
-        // Profil güncellendiğinde ülke bilgisi değişmiş olabilir
         if (action.payload && action.payload.country) {
           state.userCountry = action.payload.country;
         }
       })
       .addCase(UpdatePatientProfile.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload?.translatedError || action.payload;
         state.success = false;
       })
 
@@ -336,7 +485,7 @@ const profileSlice = createSlice({
       })
       .addCase(UploadProfileImage.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload?.translatedError || action.payload;
         state.success = false;
       })
 
@@ -351,7 +500,7 @@ const profileSlice = createSlice({
       })
       .addCase(GetPatientsByPsychologist.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload?.translatedError || action.payload;
       })
 
       // GetPatientsByInstitution
@@ -365,7 +514,7 @@ const profileSlice = createSlice({
       })
       .addCase(GetPatientsByInstitution.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload?.translatedError || action.payload;
       })
 
       // UpdateLanguagePreference
@@ -379,7 +528,7 @@ const profileSlice = createSlice({
       })
       .addCase(UpdateLanguagePreference.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload?.translatedError || action.payload;
       })
 
       // UpdateUserCountry
@@ -394,7 +543,7 @@ const profileSlice = createSlice({
       })
       .addCase(UpdateUserCountry.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload?.translatedError || action.payload;
       });
   },
 });

@@ -3,6 +3,22 @@ import { authAPI } from "../../api/auth";
 import { userProfileAPI } from "../../api/userProfile";
 import i18n from "../../i18n/i18n";
 
+const getErrorTranslation = (error) => {
+  if (error && error.errorCode) {
+    switch (error.errorCode) {
+      case "":
+        return i18n.t("");
+      case "":
+        return i18n.t("");
+      case "":
+        return i18n.t("");
+      default:
+        return error.message || i18n.t("anUnexpectedErrorOccurred");
+    }
+  }
+  return error?.message || i18n.t("anUnexpectedErrorOccurred");
+};
+
 const getUserFromStorage = () => {
   try {
     const userStr = localStorage.getItem("user");
@@ -20,7 +36,14 @@ export const loginUser = createAsyncThunk(
       const response = await authAPI.login(UsernameOrEmail, password);
 
       if (!response.success) {
-        return rejectWithValue(response.message || i18n.t("loginFailed"));
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message,
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       localStorage.setItem("accessToken", response.token);
@@ -33,7 +56,16 @@ export const loginUser = createAsyncThunk(
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -45,7 +77,14 @@ export const registerUser = createAsyncThunk(
       const response = await authAPI.register(userData);
 
       if (!response.success) {
-        return rejectWithValue(response.message || i18n.t("registerFailed"));
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message || i18n.t("registerFailed"),
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       if (response.success) {
@@ -64,7 +103,16 @@ export const registerUser = createAsyncThunk(
         error.message ||
         i18n.t("registerFailed");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -86,7 +134,16 @@ export const logoutUser = createAsyncThunk(
         error.message ||
         i18n.t("logoutFailed");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -98,9 +155,14 @@ export const forgotPassword = createAsyncThunk(
       const response = await authAPI.forgotPassword(email);
 
       if (!response.success) {
-        return rejectWithValue(
-          response.message || i18n.t("passwordResetFailed")
-        );
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message || i18n.t("passwordResetFailed"),
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       return response;
@@ -110,7 +172,16 @@ export const forgotPassword = createAsyncThunk(
         error.message ||
         i18n.t("passwordResetFailed");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -141,7 +212,16 @@ export const checkAuth = createAsyncThunk(
         error.message ||
         i18n.t("anUnexpectedErrorOccurred");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -152,15 +232,23 @@ export const loadUserData = createAsyncThunk(
     try {
       const { auth } = getState();
       if (!auth.isAuthenticated) {
-        return rejectWithValue(i18n.t("userNotAuthenticated"));
+        return rejectWithValue({
+          originalError: i18n.t("userNotAuthenticated"),
+          translatedError: i18n.t("userNotAuthenticated"),
+        });
       }
 
       const response = await userProfileAPI.getProfile();
 
       if (!response.success) {
-        return rejectWithValue(
-          response.message || i18n.t("failedToLoadUserData")
-        );
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message: response.message || i18n.t("failedToLoadUserData"),
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       return response.user;
@@ -170,7 +258,16 @@ export const loadUserData = createAsyncThunk(
         error.message ||
         i18n.t("failedToLoadUserData");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -182,9 +279,15 @@ export const UpdateUserContact = createAsyncThunk(
       const response = await authAPI.updateUserContact(contactData);
 
       if (!response.success) {
-        return rejectWithValue(
-          response.message || i18n.t("contactInformationCouldNotUpdated")
-        );
+        return rejectWithValue({
+          originalError: response.message,
+          translatedError: getErrorTranslation({
+            errorCode: response.errorCode,
+            message:
+              response.message || i18n.t("contactInformationCouldNotUpdated"),
+          }),
+          errorCode: response.errorCode,
+        });
       }
 
       return response.data;
@@ -194,7 +297,16 @@ export const UpdateUserContact = createAsyncThunk(
         error.message ||
         i18n.t("contactInformationCouldNotUpdated");
 
-      return rejectWithValue(errorMessage);
+      const errorCode = error.response?.data?.errorCode;
+
+      return rejectWithValue({
+        originalError: errorMessage,
+        translatedError: getErrorTranslation({
+          errorCode: errorCode,
+          message: errorMessage,
+        }),
+        errorCode: errorCode,
+      });
     }
   }
 );
@@ -232,7 +344,7 @@ const authSlice = createSlice({
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.isLoading = false;
-        state.error = action.payload;
+        state.error = action.payload?.translatedError || action.payload;
       })
 
       // Register
@@ -245,7 +357,7 @@ const authSlice = createSlice({
       })
       .addCase(registerUser.rejected, (state, action) => {
         state.isLoading = false;
-        state.error = action.payload;
+        state.error = action.payload?.translatedError || action.payload;
       })
 
       // Logout
@@ -276,7 +388,7 @@ const authSlice = createSlice({
       })
       .addCase(loadUserData.rejected, (state, action) => {
         state.isLoading = false;
-        state.error = action.payload;
+        state.error = action.payload?.translatedError || action.payload;
         state.isAuthenticated = false;
         state.accessToken = null;
         state.refreshToken = null;
@@ -294,7 +406,7 @@ const authSlice = createSlice({
       })
       .addCase(forgotPassword.rejected, (state, action) => {
         state.isLoading = false;
-        state.error = action.payload;
+        state.error = action.payload?.translatedError || action.payload;
       });
   },
 });

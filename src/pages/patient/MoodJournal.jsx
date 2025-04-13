@@ -30,6 +30,7 @@ import {
   setViewMode,
   setFilterMode,
   setFilterDate,
+  clearEmotionalStateError,
 } from "../../features/emotionalState/emotionalStateSlice";
 import DeleteConfirmationModal from "../../components/common/DeleteConfirmationModal";
 import NotificationSnackbar from "../../components/common/NotificationSnackbar";
@@ -96,10 +97,6 @@ const MoodJournal = () => {
     [entries, isUnlimited, moodEntryLimit]
   );
 
-  const handleAddEntryClick = () => {
-    setOpenEntryDialog(true);
-  };
-
   const canAddMoreEntries = canAddEntryForDate(new Date());
 
   const getMoodLabel = useCallback(
@@ -128,12 +125,27 @@ const MoodJournal = () => {
     dispatch(setViewMode("journal"));
   };
 
+  const handleAddEntryClick = () => {
+    dispatch(clearEmotionalStateError());
+    setOpenEntryDialog(true);
+  };
+
+  const handleCloseEntryDialog = () => {
+    dispatch(clearEmotionalStateError());
+    setOpenEntryDialog(false);
+  };
+
+  const handleCloseEditDialog = () => {
+    dispatch(clearEmotionalStateError());
+    setEditingEntry(null);
+  };
+
   const handleAddEntry = (formData) => {
     if (!canAddEntryForDate(new Date(formData.date))) {
       setNotification({
         open: true,
         message: t("dailyLimitReachedForSelectedDate"),
-        severity: "warning",
+        severity: "error",
       });
       return;
     }
@@ -211,6 +223,11 @@ const MoodJournal = () => {
   const handleCloseDeleteModal = () => {
     setDeleteModalOpen(false);
     setEntryToDelete(null);
+  };
+
+  const handleCloseNotification = () => {
+    setNotification({ ...notification, open: false });
+    dispatch(clearEmotionalStateError());
   };
 
   const handleBookmarkEntry = (id) => {
@@ -397,13 +414,13 @@ const MoodJournal = () => {
         <MoodEntryDialog
           open={openEntryDialog}
           entry={null}
-          onClose={() => setOpenEntryDialog(false)}
+          onClose={handleCloseEntryDialog}
           onSave={handleAddEntry}
           onError={(message) =>
             setNotification({
               open: true,
               message: message,
-              severity: "warning",
+              severity: "error",
             })
           }
           canAddForDate={canAddEntryForDate}
@@ -418,7 +435,7 @@ const MoodJournal = () => {
         <MoodEntryDialog
           open={!!editingEntry}
           entry={editingEntry}
-          onClose={() => setEditingEntry(null)}
+          onClose={handleCloseEditDialog}
           onSave={handleUpdateEntry}
           moodLevels={MOOD_LEVELS}
           moodFactors={MOOD_FACTORS}
@@ -454,7 +471,7 @@ const MoodJournal = () => {
 
       <NotificationSnackbar
         open={notification.open}
-        onClose={() => setNotification({ ...notification, open: false })}
+        onClose={handleCloseNotification}
         message={notification.message}
         severity={notification.severity}
       />

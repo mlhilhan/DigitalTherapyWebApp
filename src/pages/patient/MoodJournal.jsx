@@ -41,6 +41,8 @@ import { useSubscriptionFeature } from "../../hooks/useSubscriptionFeature";
 const MoodJournal = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { t } = useTranslation();
+  const theme = useTheme();
   const { entries, loading, error, viewMode, filterMode, filterDate } =
     useSelector((state) => state.emotionalState);
   const [openEntryDialog, setOpenEntryDialog] = useState(false);
@@ -66,8 +68,6 @@ const MoodJournal = () => {
     type: "warning",
     warningMessage: "",
   });
-  const { t } = useTranslation();
-  const theme = useTheme();
 
   const {
     hasAccess: hasAdvancedViewsAccess,
@@ -280,6 +280,12 @@ const MoodJournal = () => {
   const filteredEntries = getFilteredEntries(entries, filterMode, filterDate);
 
   useEffect(() => {
+    if (!hasAdvancedViewsAccess && viewMode !== "journal") {
+      dispatch(setViewMode("journal"));
+    }
+  }, []);
+
+  useEffect(() => {
     dispatch(GetAllEmotionalStates());
   }, [dispatch]);
 
@@ -306,7 +312,7 @@ const MoodJournal = () => {
     if (hasAdvancedViewsAccess === false) {
       dispatch(setViewMode("journal"));
     }
-  }, [hasAdvancedViewsAccess, dispatch]);
+  }, [hasAdvancedViewsAccess, dispatch, viewMode]);
 
   if (loading && entries.length === 0) {
     return <LoadingComponent type={LOADING_TYPES.CARD} count={3} />;

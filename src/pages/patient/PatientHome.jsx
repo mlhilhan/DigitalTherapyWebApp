@@ -27,6 +27,7 @@ import {
 import { CreateEmotionalState } from "../../features/emotionalState/emotionalStateSlice";
 import NotificationSnackbar from "../../components/common/NotificationSnackbar";
 import { GetCurrentUserSubscription } from "../../features/subscription/subscriptionSlice";
+import useSubscriptionFeature from "../../hooks/useSubscriptionFeature";
 
 const PatientHome = () => {
   const { t } = useTranslation();
@@ -37,6 +38,7 @@ const PatientHome = () => {
   const { user } = useSelector((state) => state.auth);
   const { profile } = useSelector((state) => state.profile);
   const { sessions } = useSelector((state) => state.therapyChat);
+  const { entries } = useSelector((state) => state.emotionalState);
   const [patientFullName, setPatientFullName] = useState("");
   const [openMoodDialog, setOpenMoodDialog] = useState(false);
   const [selectedMoodValue, setSelectedMoodValue] = useState(null);
@@ -47,6 +49,38 @@ const PatientHome = () => {
   });
   const { currentSubscription, loading: subscriptionLoading } = useSelector(
     (state) => state.subscription
+  );
+
+  const {
+    hasAccess: hasMoodEntryAccess,
+    limit: moodEntryLimit,
+    isUnlimited,
+    currentPlan,
+  } = useSubscriptionFeature("mood_entry");
+
+  const { hasAccess: hasAdvancedViewsAccess } = useSubscriptionFeature(
+    "advanced_mood_views"
+  );
+
+  const canAddEntryForDate = useCallback(
+    (date) => {
+      if (isUnlimited) return true;
+
+      const effectiveLimit = moodEntryLimit <= 0 ? 1 : moodEntryLimit;
+
+      const targetDate = date ? new Date(date) : new Date();
+
+      const activeEntriesForDate = entries.filter((entry) => {
+        const entryDate = new Date(entry.date);
+        return (
+          entryDate.toDateString() === targetDate.toDateString() &&
+          entry.isDeleted === false
+        );
+      });
+
+      return activeEntriesForDate.length < effectiveLimit;
+    },
+    [entries, isUnlimited, moodEntryLimit]
   );
 
   useEffect(() => {
@@ -235,6 +269,14 @@ const PatientHome = () => {
           getMoodColor={getMoodColor}
           getMoodLabel={getMoodLabel}
           moodVal={selectedMoodValue}
+          canAddForDate={canAddEntryForDate}
+          onError={(message) => {
+            setNotification({
+              open: true,
+              message: message,
+              severity: "error",
+            });
+          }}
         />
       )}
 

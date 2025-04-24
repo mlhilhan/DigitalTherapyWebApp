@@ -104,9 +104,10 @@ const SubscriptionPlanCard = ({ plan, currentPlan, onSelect, onContactUs }) => {
     {
       text: t("psychologistSupport"),
       available: plan.hasPsychologistSupport,
-      limit: plan.hasPsychologistSupport
-        ? `${plan.psychologistSessionsPerMonth} ${t("sessionsPerMonth")}`
-        : "",
+      // limit: plan.hasPsychologistSupport
+      //   ? `${plan.psychologistSessionsPerMonth} ${t("sessionsPerMonth")}`
+      //   : "",
+      limit: t("itWillBeAvailableSoonForAnAdditionalFee"),
     },
     {
       text: t("reportsAndAnalytics"),

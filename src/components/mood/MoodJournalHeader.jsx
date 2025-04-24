@@ -13,7 +13,6 @@ import {
   MenuItem,
   useMediaQuery,
   useTheme,
-  Badge,
 } from "@mui/material";
 import {
   Add,
@@ -26,7 +25,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
 import trLocale from "date-fns/locale/tr";
-import { useSelector, useDispatch } from "react-redux";
+import { useSelector } from "react-redux";
 
 const MoodJournalHeader = ({
   viewMode,
@@ -45,11 +44,9 @@ const MoodJournalHeader = ({
   const { loading } = useSelector((state) => state.emotionalState);
 
   const handleViewModeChange = (event, newMode) => {
-    if (newMode !== "journal" && !hasAdvancedViewsAccess) {
-      return;
+    if (newMode !== null) {
+      onViewModeChange(newMode);
     }
-
-    if (newMode) onViewModeChange(newMode);
   };
 
   const handleFilterMenuOpen = (event) => {
@@ -147,25 +144,6 @@ const MoodJournalHeader = ({
                 <ToggleButton
                   value="calendar"
                   disabled={!hasAdvancedViewsAccess}
-                  sx={{
-                    position: "relative",
-                    ...(!hasAdvancedViewsAccess && {
-                      opacity: 0.6,
-                      "&::after": {
-                        content: '""',
-                        position: "absolute",
-                        top: -8,
-                        right: -8,
-                        width: 16,
-                        height: 16,
-                        borderRadius: "50%",
-                        backgroundColor: theme.palette.warning.main,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      },
-                    }),
-                  }}
                 >
                   <Tooltip
                     title={
@@ -183,29 +161,7 @@ const MoodJournalHeader = ({
                   </Tooltip>
                 </ToggleButton>
 
-                <ToggleButton
-                  value="chart"
-                  disabled={!hasAdvancedViewsAccess}
-                  sx={{
-                    position: "relative",
-                    ...(!hasAdvancedViewsAccess && {
-                      opacity: 0.6,
-                      "&::after": {
-                        content: '""',
-                        position: "absolute",
-                        top: -8,
-                        right: -8,
-                        width: 16,
-                        height: 16,
-                        borderRadius: "50%",
-                        backgroundColor: theme.palette.warning.main,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      },
-                    }),
-                  }}
-                >
+                <ToggleButton value="chart" disabled={!hasAdvancedViewsAccess}>
                   <Tooltip
                     title={
                       hasAdvancedViewsAccess

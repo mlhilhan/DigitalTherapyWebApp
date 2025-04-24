@@ -50,6 +50,7 @@ const MoodJournal = () => {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [entryToDelete, setEntryToDelete] = useState(null);
   const { profile } = useSelector((state) => state.profile);
+  const { currentSubscription } = useSelector((state) => state.subscription);
   const [patientFullName, setPatientFullName] = useState("");
   const [notification, setNotification] = useState({
     open: false,
@@ -70,11 +71,15 @@ const MoodJournal = () => {
   });
 
   const {
-    hasAccess: hasAdvancedViewsAccess,
+    hasAccess: hasMoodEntryAccess,
     limit: moodEntryLimit,
     isUnlimited,
     currentPlan,
   } = useSubscriptionFeature("mood_entry");
+
+  const { hasAccess: hasAdvancedViewsAccess } = useSubscriptionFeature(
+    "advanced_mood_views"
+  );
 
   const canAddEntryForDate = useCallback(
     (date) => {
@@ -161,7 +166,6 @@ const MoodJournal = () => {
         });
       })
       .catch((error) => {
-        debugger;
         const errorMessage = error.includes("daily limit")
           ? t("dailyLimitReachedForSelectedDate")
           : error;
@@ -283,7 +287,7 @@ const MoodJournal = () => {
     if (!hasAdvancedViewsAccess && viewMode !== "journal") {
       dispatch(setViewMode("journal"));
     }
-  }, []);
+  }, [dispatch, hasAdvancedViewsAccess, viewMode]);
 
   useEffect(() => {
     dispatch(GetAllEmotionalStates());
@@ -307,12 +311,6 @@ const MoodJournal = () => {
       });
     }
   }, [error]);
-
-  useEffect(() => {
-    if (hasAdvancedViewsAccess === false) {
-      dispatch(setViewMode("journal"));
-    }
-  }, [hasAdvancedViewsAccess, dispatch, viewMode]);
 
   if (loading && entries.length === 0) {
     return <LoadingComponent type={LOADING_TYPES.CARD} count={3} />;

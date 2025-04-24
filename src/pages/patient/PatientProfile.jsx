@@ -569,6 +569,20 @@ const PatientProfile = () => {
 
                   <Grid item xs={12} sm={6}>
                     <InfoItem
+                      icon={<Translate color="primary" />}
+                      label={t("preferredLanguage")}
+                      value={
+                        profile?.preferredLanguage
+                          ? appLanguages.find(
+                              (lang) => lang.value === profile.preferredLanguage
+                            )?.label
+                          : "-"
+                      }
+                    />
+                  </Grid>
+
+                  <Grid item xs={12} sm={6}>
+                    <InfoItem
                       icon={<Email color="primary" />}
                       label={t("email")}
                       value={user?.email}
@@ -580,20 +594,6 @@ const PatientProfile = () => {
                       icon={<Phone color="primary" />}
                       label={t("phoneNumber")}
                       value={profile?.phoneNumber || "-"}
-                    />
-                  </Grid>
-
-                  <Grid item xs={12} sm={6}>
-                    <InfoItem
-                      icon={<Translate color="primary" />}
-                      label={t("preferredLanguage")}
-                      value={
-                        profile?.preferredLanguage
-                          ? appLanguages.find(
-                              (lang) => lang.value === profile.preferredLanguage
-                            )?.label
-                          : "-"
-                      }
                     />
                   </Grid>
                 </Grid>

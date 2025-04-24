@@ -5,12 +5,12 @@ import i18n from "../../i18n/i18n";
 const getErrorTranslation = (error) => {
   if (error && error.errorCode) {
     switch (error.errorCode) {
-      case "":
-        return i18n.t("");
-      case "":
-        return i18n.t("");
-      case "":
-        return i18n.t("");
+      case "DAILY_LIMIT_REACHED":
+        return i18n.t("dailyMoodEntryLimitReached");
+      case "FEATURE_ACCESS_DENIED":
+        return i18n.t("featureAccessDenied");
+      case "SUBSCRIPTION_FEATURE_RESTRICTED":
+        return i18n.t("subscriptionFeatureRestricted");
       default:
         return error.message || i18n.t("anUnexpectedErrorOccurred");
     }

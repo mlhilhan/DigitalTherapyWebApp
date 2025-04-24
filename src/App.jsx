@@ -11,6 +11,7 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import i18n from "./i18n/i18n";
 import { GetCurrentPatientProfile } from "./features/profile/profileSlice";
+import { GetCurrentUserSubscription } from "./features/subscription/subscriptionSlice";
 import roles from "./config/roles";
 
 function AppContent() {
@@ -33,6 +34,7 @@ function AppContent() {
       switch (user?.role?.roleId) {
         case roles.PATIENT:
           dispatch(GetCurrentPatientProfile());
+          dispatch(GetCurrentUserSubscription());
           break;
         case roles.PSYCHOLOGIST:
           break;
@@ -43,7 +45,7 @@ function AppContent() {
         default:
       }
     }
-  }, [isAuthenticated, dispatch]);
+  }, [isAuthenticated, dispatch, user?.role?.roleId]);
 
   return (
     <>

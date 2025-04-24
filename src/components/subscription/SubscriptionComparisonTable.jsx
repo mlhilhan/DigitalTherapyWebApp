@@ -66,11 +66,12 @@ const SubscriptionComparisonTable = ({ plans }) => {
       icon: <Psychology sx={{ mr: 1, color: "primary.main" }} />,
       title: t("psychologistSupport"),
       getValue: (plan) => ({
-        text: plan.hasPsychologistSupport
-          ? plan.psychologistSessionsPerMonth > 0
-            ? `${plan.psychologistSessionsPerMonth} ${t("sessionsPerMonth")}`
-            : t("customized")
-          : "",
+        // text: plan.hasPsychologistSupport
+        //   ? plan.psychologistSessionsPerMonth > 0
+        //     ? `${plan.psychologistSessionsPerMonth} ${t("sessionsPerMonth")}`
+        //     : t("customized")
+        //   : "",
+        text: t("itWillBeAvailableSoonForAnAdditionalFee"),
         available: plan.hasPsychologistSupport,
       }),
     },

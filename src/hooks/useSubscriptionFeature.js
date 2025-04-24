@@ -31,7 +31,7 @@ export const useSubscriptionFeature = (featureName) => {
     } else {
       setIsLoading(false);
     }
-  }, [featureName, currentSubscription]);
+  }, [featureName, currentSubscription?.subscription?.planId]);
 
   const getPlanBasedAccess = () => {
     if (featureAccess && featureAccess[featureName] !== undefined) {
@@ -57,6 +57,11 @@ export const useSubscriptionFeature = (featureName) => {
       case "all_meditation_content":
         return planId === "premium" || planId === "pro";
 
+      case "advanced_mood_views":
+        return (
+          planId === "standard" || planId === "premium" || planId === "pro"
+        );
+
       case "basic_mood_tracking":
       case "basic_ai_chat":
         return true;
@@ -78,6 +83,7 @@ export const useSubscriptionFeature = (featureName) => {
     switch (featureName) {
       case "mood_entry":
         if (planId === "free") return 1;
+        if (planId === "standard") return 3;
         return -1;
 
       case "ai_chat_session":

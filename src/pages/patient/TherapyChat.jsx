@@ -44,6 +44,7 @@ import {
   Lock,
   AccessTime,
 } from "@mui/icons-material";
+import { useNavigate } from "react-router-dom";
 import ChatHeader from "../../components/therapyChat/ChatHeader";
 import MessageSuggestions from "../../components/therapyChat/MessageSuggestions";
 import MessageBubble from "../../components/therapyChat/MessageBubble";
@@ -53,6 +54,7 @@ import MessageMenu from "../../components/therapyChat/MessageMenu";
 import LoadingComponent, {
   LOADING_TYPES,
 } from "../../components/common/LoadingComponent";
+import FeatureGuard from "../../components/common/FeatureGuard";
 import {
   StartChatSession,
   SendChatMessage,
@@ -69,11 +71,13 @@ import {
 } from "../../features/therapyChat/therapyChatSlice";
 import NotificationSnackbar from "../../components/common/NotificationSnackbar";
 import ConfirmationModal from "../../components/common/ConfirmationModal";
+import { useSubscriptionFeature } from "../../hooks/useSubscriptionFeature";
 
 const TherapyChat = () => {
   const { t } = useTranslation();
   const theme = useTheme();
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const [newMessage, setNewMessage] = useState("");
   const [menuAnchorEl, setMenuAnchorEl] = useState(null);
   const [selectedMessageId, setSelectedMessageId] = useState(null);
@@ -82,8 +86,9 @@ const TherapyChat = () => {
   const [errorOpen, setErrorOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const messagesEndRef = useRef(null);
-  //const [drawerOpen, setDrawerOpen] = useState(false);
   const [showWelcomeMessage, setShowWelcomeMessage] = useState(true);
+  const [sessionLimitReached, setSessionLimitReached] = useState(false);
+  const [messageLimitReached, setMessageLimitReached] = useState(false);
   const { user } = useSelector((state) => state.auth);
   const {
     activeSession,
@@ -95,11 +100,26 @@ const TherapyChat = () => {
     error,
     drawerOpen,
   } = useSelector((state) => state.therapyChat);
+
+  // Abonelik özelliklerine erişim kontrolü
+  const { hasAccess: hasBasicChatAccess } =
+    useSubscriptionFeature("basic_ai_chat");
+
+  const {
+    hasAccess: hasUnlimitedSessionsAccess,
+    limit: weeklySessionLimit,
+    isUnlimited: isSessionsUnlimited,
+  } = useSubscriptionFeature("ai_chat_session");
+
+  const { limit: messageLimitPerChat, isUnlimited: isMessagesUnlimited } =
+    useSubscriptionFeature("chat_message");
+
   const [notification, setNotification] = useState({
     open: false,
     message: "",
     severity: "info",
   });
+
   const [confirmModalProps, setConfirmModalProps] = useState({
     open: false,
     title: "",
@@ -133,6 +153,33 @@ const TherapyChat = () => {
 
     initChat();
   }, [dispatch, activeSession]);
+
+  // Session limit kontrolü
+  useEffect(() => {
+    if (!isSessionsUnlimited && sessions && sessions.length > 0) {
+      // Bu haftaki oturumların sayısını kontrol et
+      const now = new Date();
+      const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+      const thisWeeksSessions = sessions.filter((session) => {
+        const sessionDate = new Date(session.startTime);
+        return sessionDate >= oneWeekAgo && sessionDate <= now;
+      });
+
+      setSessionLimitReached(thisWeeksSessions.length >= weeklySessionLimit);
+    } else {
+      setSessionLimitReached(false);
+    }
+  }, [sessions, weeklySessionLimit, isSessionsUnlimited]);
+
+  // Mesaj limit kontrolü
+  useEffect(() => {
+    if (!isMessagesUnlimited && currentMessages && currentMessages.length > 0) {
+      setMessageLimitReached(currentMessages.length >= messageLimitPerChat);
+    } else {
+      setMessageLimitReached(false);
+    }
+  }, [currentMessages, messageLimitPerChat, isMessagesUnlimited]);
 
   useEffect(() => {
     if (activeSession?.id) {
@@ -174,6 +221,25 @@ const TherapyChat = () => {
       return;
     }
 
+    // Mesaj limiti kontrolü
+    if (messageLimitReached && !isMessagesUnlimited) {
+      setConfirmModalProps({
+        open: true,
+        title: t("messageLimitReached"),
+        message: t("messageLimitReachedDescription", {
+          limit: messageLimitPerChat,
+        }),
+        confirmButtonText: t("upgradePlan"),
+        cancelButtonText: t("cancel"),
+        confirmColor: "primary",
+        type: "info",
+        onConfirm: () => {
+          navigate("/patient-dashboard/subscription-plans");
+        },
+      });
+      return;
+    }
+
     const userMessage = {
       id: `temp-${new Date().getTime()}`,
       isAiGenerated: false,
@@ -209,7 +275,30 @@ const TherapyChat = () => {
 
       setIsTyping(false);
     } catch (error) {
-      setErrorMessage(error.message || t("anErrorOccurred"));
+      // Özel hata mesajlarını kontrol et
+      if (error && typeof error === "string") {
+        if (error.includes("message limit")) {
+          setConfirmModalProps({
+            open: true,
+            title: t("messageLimitReached"),
+            message: t("messageLimitReachedDescription", {
+              limit: messageLimitPerChat,
+            }),
+            confirmButtonText: t("upgradePlan"),
+            cancelButtonText: t("cancel"),
+            confirmColor: "primary",
+            type: "info",
+            onConfirm: () => {
+              navigate("/patient-dashboard/subscription-plans");
+            },
+          });
+        } else {
+          setErrorMessage(error);
+        }
+      } else {
+        setErrorMessage(t("anErrorOccurred"));
+      }
+
       setErrorOpen(true);
       setIsTyping(false);
     }
@@ -279,6 +368,25 @@ const TherapyChat = () => {
   };
 
   const startNewSession = async () => {
+    // Eğer sınır aşıldıysa ve sınırsız abonelik yoksa
+    if (sessionLimitReached && !isSessionsUnlimited) {
+      setConfirmModalProps({
+        open: true,
+        title: t("sessionLimitReached"),
+        message: t("weeklySessionLimitReachedMessage", {
+          limit: weeklySessionLimit,
+        }),
+        confirmButtonText: t("upgradePlan"),
+        cancelButtonText: t("cancel"),
+        confirmColor: "primary",
+        type: "info",
+        onConfirm: () => {
+          navigate("/patient-dashboard/subscription-plans");
+        },
+      });
+      return;
+    }
+
     try {
       dispatch(clearMessages());
       dispatch(setActiveSession(null));
@@ -287,7 +395,30 @@ const TherapyChat = () => {
       setShowWelcomeMessage(true);
       dispatch(setDrawerOpen(false));
     } catch (error) {
-      setErrorMessage(error.message || t("anErrorOccurred"));
+      // Özel hata mesajları için kontrol
+      if (error && typeof error === "string") {
+        if (error.includes("weekly") && error.includes("limit")) {
+          setConfirmModalProps({
+            open: true,
+            title: t("sessionLimitReached"),
+            message: t("weeklySessionLimitReachedMessage", {
+              limit: weeklySessionLimit,
+            }),
+            confirmButtonText: t("upgradePlan"),
+            cancelButtonText: t("cancel"),
+            confirmColor: "primary",
+            type: "info",
+            onConfirm: () => {
+              navigate("/patient-dashboard/subscription-plans");
+            },
+          });
+        } else {
+          setErrorMessage(error);
+        }
+      } else {
+        setErrorMessage(t("anErrorOccurred"));
+      }
+
       setErrorOpen(true);
     }
   };
@@ -369,6 +500,26 @@ const TherapyChat = () => {
         new Date(session.startTime).toLocaleDateString("tr-TR") === date
     ),
   }));
+
+  // Çeşitli oturum limiti hesaplamaları
+  const getThisWeeksSessions = () => {
+    const now = new Date();
+    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    return uniqueSessions.filter((session) => {
+      const sessionDate = new Date(session.startTime);
+      return sessionDate >= oneWeekAgo && sessionDate <= now;
+    });
+  };
+
+  const thisWeeksSessions = getThisWeeksSessions();
+  const remainingSessions = isSessionsUnlimited
+    ? -1
+    : Math.max(0, weeklySessionLimit - thisWeeksSessions.length);
+
+  const remainingMessages = isMessagesUnlimited
+    ? -1
+    : Math.max(0, messageLimitPerChat - (currentMessages?.length || 0));
 
   if (localLoading || loading) {
     return <LoadingComponent type={LOADING_TYPES.CHAT} />;
@@ -534,28 +685,66 @@ const TherapyChat = () => {
             </Grid>
           </Box>
 
-          <Button
-            variant="contained"
-            size="large"
-            startIcon={<Add />}
-            onClick={startNewSession}
-            sx={{
-              py: 1.5,
-              px: 4,
-              borderRadius: 8,
-              textTransform: "none",
-              fontSize: "1rem",
-              fontWeight: 600,
-              boxShadow: "0 8px 20px rgba(25, 118, 210, 0.3)",
-              transition: "all 0.3s ease",
-              "&:hover": {
-                transform: "translateY(-3px)",
-                boxShadow: "0 12px 28px rgba(25, 118, 210, 0.4)",
-              },
-            }}
-          >
-            {t("startNewSession")}
-          </Button>
+          {!sessionLimitReached || isSessionsUnlimited ? (
+            <Button
+              variant="contained"
+              size="large"
+              startIcon={<Add />}
+              onClick={startNewSession}
+              sx={{
+                py: 1.5,
+                px: 4,
+                borderRadius: 8,
+                textTransform: "none",
+                fontSize: "1rem",
+                fontWeight: 600,
+                boxShadow: "0 8px 20px rgba(25, 118, 210, 0.3)",
+                transition: "all 0.3s ease",
+                "&:hover": {
+                  transform: "translateY(-3px)",
+                  boxShadow: "0 12px 28px rgba(25, 118, 210, 0.4)",
+                },
+              }}
+            >
+              {t("startNewSession")}
+            </Button>
+          ) : (
+            <Box sx={{ textAlign: "center" }}>
+              <Alert
+                severity="warning"
+                sx={{
+                  mb: 2,
+                  mx: "auto",
+                  maxWidth: 500,
+                  display: "inline-flex",
+                }}
+              >
+                <Typography variant="body2">
+                  {t("weeklySessionLimitReachedMessage", {
+                    limit: weeklySessionLimit,
+                  })}
+                </Typography>
+              </Alert>
+              <Button
+                variant="contained"
+                color="warning"
+                size="large"
+                onClick={() =>
+                  navigate("/patient-dashboard/subscription-plans")
+                }
+                sx={{
+                  py: 1.5,
+                  px: 4,
+                  borderRadius: 8,
+                  textTransform: "none",
+                  fontSize: "1rem",
+                  fontWeight: 600,
+                }}
+              >
+                {t("upgradePlan")}
+              </Button>
+            </Box>
+          )}
 
           {sessions && sessions.length > 0 && (
             <Button
@@ -574,478 +763,636 @@ const TherapyChat = () => {
   );
 
   return (
-    <Box
-      sx={{
-        height: "100%",
-        width: "100%",
-        display: "flex",
-        flexDirection: "column",
-        bgcolor: "#F8FAFC",
-        position: "relative",
-        borderRadius: 3,
-        overflow: "hidden",
-        boxShadow: "0 10px 40px rgba(0,0,0,0.03)",
-      }}
-    >
-      {/* Chat Header */}
-      <Card
-        elevation={0}
+    <FeatureGuard featureName="basic_ai_chat">
+      <Box
         sx={{
-          borderRadius: 0,
-          backgroundColor: "#fff",
-          boxShadow: "0 4px 20px rgba(0,0,0,0.04)",
+          height: "100%",
+          width: "100%",
+          display: "flex",
+          flexDirection: "column",
+          bgcolor: "#F8FAFC",
           position: "relative",
-          zIndex: 10,
+          borderRadius: 3,
+          overflow: "hidden",
+          boxShadow: "0 10px 40px rgba(0,0,0,0.03)",
         }}
       >
-        <Box sx={{ p: 2 }}>
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <ChatHeader />
-            <Box sx={{ display: "flex" }}>
-              {activeSession && (
-                <Button
-                  variant="outlined"
-                  color="primary"
-                  startIcon={<Add />}
-                  onClick={startNewSession}
-                  sx={{
-                    mr: 2,
-                    borderRadius: 8,
-                    textTransform: "none",
-                    "&:hover": {
-                      bgcolor: alpha(theme.palette.primary.main, 0.05),
-                      borderColor: theme.palette.primary.main,
-                    },
-                  }}
-                >
-                  {t("newSession")}
-                </Button>
-              )}
-              <Tooltip
-                title={t("sessionHistory")}
-                placement="bottom"
-                arrow
-                TransitionComponent={Zoom}
-              >
-                <IconButton
-                  color="primary"
-                  onClick={() => dispatch(setDrawerOpen(true))}
-                  aria-label={t("sessionHistory")}
-                  sx={{
-                    bgcolor: "rgba(25, 118, 210, 0.08)",
-                    "&:hover": {
-                      bgcolor: "rgba(25, 118, 210, 0.14)",
-                    },
-                    transition: "all 0.2s ease",
-                  }}
-                >
-                  <Badge badgeContent={sessions?.length || 0} color="primary">
-                    <History />
-                  </Badge>
-                </IconButton>
-              </Tooltip>
-            </Box>
-          </Box>
-        </Box>
-      </Card>
-
-      {/* Main Content */}
-      {!activeSession ? (
-        // Aktif oturum yoksa hoş geldin ekranını göster
-        <WelcomeScreen />
-      ) : (
-        // Aktif oturum varsa mesajlaşma arayüzünü göster
-        <>
-          {/* Message Suggestions */}
-          <Collapse in={showWelcomeMessage && currentMessages.length === 0}>
-            <Box sx={{ px: 2, pt: 2 }}>
-              <MessageSuggestions onSelectSuggestion={handleSuggestedMessage} />
-            </Box>
-          </Collapse>
-
-          {/* Status notification for completed sessions */}
-          {activeSession?.status === "Completed" && (
+        {/* Chat Header */}
+        <Card
+          elevation={0}
+          sx={{
+            borderRadius: 0,
+            backgroundColor: "#fff",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.04)",
+            position: "relative",
+            zIndex: 10,
+          }}
+        >
+          <Box sx={{ p: 2 }}>
             <Box
               sx={{
-                mx: 2,
-                mt: 2,
-                p: 2,
-                borderRadius: 2,
-                bgcolor: alpha(theme.palette.success.main, 0.07),
-                border: "1px solid",
-                borderColor: alpha(theme.palette.success.main, 0.2),
                 display: "flex",
+                justifyContent: "space-between",
                 alignItems: "center",
               }}
             >
-              <CheckCircle color="success" sx={{ mr: 1.5, fontSize: 20 }} />
-              <Typography variant="body2" color="success.main">
-                {t("sessionCompletedInfoMessage")}
-              </Typography>
-            </Box>
-          )}
-
-          {/* Chat Messages */}
-          <Paper
-            elevation={0}
-            sx={{
-              flexGrow: 1,
-              px: 2,
-              py: 1.5,
-              mx: 2,
-              mb: 2,
-              mt: activeSession?.status === "Completed" ? 0 : 2,
-              borderRadius: 3,
-              backgroundColor: "#fff",
-              overflow: "auto",
-              display: "flex",
-              flexDirection: "column",
-              boxShadow: "0 4px 20px rgba(0,0,0,0.02)",
-              border: "1px solid rgba(0,0,0,0.05)",
-              scrollBehavior: "smooth",
-            }}
-          >
-            <Box sx={{ flexGrow: 1 }}>
-              {loadingMessages && currentMessages.length === 0 && (
-                <Box sx={{ display: "flex", justifyContent: "center", my: 2 }}>
-                  <TypingIndicator />
-                </Box>
-              )}
-
-              {currentMessages.length === 0 && !loadingMessages && (
-                <Fade in={true} timeout={800}>
-                  <Box
+              <ChatHeader />
+              <Box sx={{ display: "flex" }}>
+                {activeSession && (
+                  <Button
+                    variant="outlined"
+                    color="primary"
+                    startIcon={<Add />}
+                    onClick={startNewSession}
+                    disabled={sessionLimitReached && !isSessionsUnlimited}
                     sx={{
-                      display: "flex",
-                      justifyContent: "center",
-                      alignItems: "center",
-                      height: "100%",
-                      flexDirection: "column",
-                      textAlign: "center",
-                      p: 3,
+                      mr: 2,
+                      borderRadius: 8,
+                      textTransform: "none",
+                      "&:hover": {
+                        bgcolor: alpha(theme.palette.primary.main, 0.05),
+                        borderColor: theme.palette.primary.main,
+                      },
                     }}
                   >
+                    {t("newSession")}
+                  </Button>
+                )}
+                <Tooltip
+                  title={t("sessionHistory")}
+                  placement="bottom"
+                  arrow
+                  TransitionComponent={Zoom}
+                >
+                  <IconButton
+                    color="primary"
+                    onClick={() => dispatch(setDrawerOpen(true))}
+                    aria-label={t("sessionHistory")}
+                    sx={{
+                      bgcolor: "rgba(25, 118, 210, 0.08)",
+                      "&:hover": {
+                        bgcolor: "rgba(25, 118, 210, 0.14)",
+                      },
+                      transition: "all 0.2s ease",
+                    }}
+                  >
+                    <Badge badgeContent={sessions?.length || 0} color="primary">
+                      <History />
+                    </Badge>
+                  </IconButton>
+                </Tooltip>
+              </Box>
+            </Box>
+          </Box>
+        </Card>
+
+        {/* Main Content */}
+        {!activeSession ? (
+          // Aktif oturum yoksa hoş geldin ekranını göster
+          <WelcomeScreen />
+        ) : (
+          // Aktif oturum varsa mesajlaşma arayüzünü göster
+          <>
+            {/* Session limit aşılmış uyarısı */}
+            {sessionLimitReached && !isSessionsUnlimited && (
+              <Alert
+                severity="warning"
+                sx={{ mx: 2, mt: 2 }}
+                action={
+                  <Button
+                    color="inherit"
+                    size="small"
+                    onClick={() =>
+                      navigate("/patient-dashboard/subscription-plans")
+                    }
+                  >
+                    {t("upgradePlan")}
+                  </Button>
+                }
+              >
+                {t("weeklySessionLimitReached")}
+              </Alert>
+            )}
+
+            {/* Mesaj limit uyarısı */}
+            {remainingMessages < 3 &&
+              !isMessagesUnlimited &&
+              remainingMessages > 0 && (
+                <Alert
+                  severity="info"
+                  sx={{ mx: 2, mt: sessionLimitReached ? 0 : 2, mt: 1 }}
+                  action={
+                    <Button
+                      color="inherit"
+                      size="small"
+                      onClick={() =>
+                        navigate("/patient-dashboard/subscription-plans")
+                      }
+                    >
+                      {t("seePlans")}
+                    </Button>
+                  }
+                >
+                  {t("messageCountLimitWarning", {
+                    remaining: remainingMessages,
+                  })}
+                </Alert>
+              )}
+
+            {/* Mesaj limiti aşıldı uyarısı */}
+            {messageLimitReached && !isMessagesUnlimited && (
+              <Alert
+                severity="warning"
+                sx={{ mx: 2, mt: sessionLimitReached ? 0 : 2, mt: 1 }}
+                action={
+                  <Button
+                    color="inherit"
+                    size="small"
+                    onClick={() =>
+                      navigate("/patient-dashboard/subscription-plans")
+                    }
+                  >
+                    {t("upgradePlan")}
+                  </Button>
+                }
+              >
+                {t("messageCountLimitReached", { limit: messageLimitPerChat })}
+              </Alert>
+            )}
+
+            {/* Message Suggestions */}
+            <Collapse in={showWelcomeMessage && currentMessages.length === 0}>
+              <Box sx={{ px: 2, pt: 2 }}>
+                <MessageSuggestions
+                  onSelectSuggestion={handleSuggestedMessage}
+                />
+              </Box>
+            </Collapse>
+
+            {/* Status notification for completed sessions */}
+            {activeSession?.status === "Completed" && (
+              <Box
+                sx={{
+                  mx: 2,
+                  mt: 2,
+                  p: 2,
+                  borderRadius: 2,
+                  bgcolor: alpha(theme.palette.success.main, 0.07),
+                  border: "1px solid",
+                  borderColor: alpha(theme.palette.success.main, 0.2),
+                  display: "flex",
+                  alignItems: "center",
+                }}
+              >
+                <CheckCircle color="success" sx={{ mr: 1.5, fontSize: 20 }} />
+                <Typography variant="body2" color="success.main">
+                  {t("sessionCompletedInfoMessage")}
+                </Typography>
+              </Box>
+            )}
+
+            {/* Chat Messages */}
+            <Paper
+              elevation={0}
+              sx={{
+                flexGrow: 1,
+                px: 2,
+                py: 1.5,
+                mx: 2,
+                mb: 2,
+                mt: activeSession?.status === "Completed" ? 0 : 2,
+                borderRadius: 3,
+                backgroundColor: "#fff",
+                overflow: "auto",
+                display: "flex",
+                flexDirection: "column",
+                boxShadow: "0 4px 20px rgba(0,0,0,0.02)",
+                border: "1px solid rgba(0,0,0,0.05)",
+                scrollBehavior: "smooth",
+              }}
+            >
+              <Box sx={{ flexGrow: 1 }}>
+                {loadingMessages && currentMessages.length === 0 && (
+                  <Box
+                    sx={{ display: "flex", justifyContent: "center", my: 2 }}
+                  >
+                    <TypingIndicator />
+                  </Box>
+                )}
+
+                {currentMessages.length === 0 && !loadingMessages && (
+                  <Fade in={true} timeout={800}>
                     <Box
                       sx={{
-                        bgcolor: "rgba(25, 118, 210, 0.05)",
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        height: "100%",
+                        flexDirection: "column",
+                        textAlign: "center",
                         p: 3,
-                        borderRadius: 4,
-                        mb: 2,
-                        maxWidth: "85%",
-                        border: "1px dashed rgba(25, 118, 210, 0.3)",
                       }}
                     >
-                      <FormatQuote
-                        color="primary"
+                      <Box
                         sx={{
-                          fontSize: 40,
-                          opacity: 0.6,
-                          mb: 1,
+                          bgcolor: "rgba(25, 118, 210, 0.05)",
+                          p: 3,
+                          borderRadius: 4,
+                          mb: 2,
+                          maxWidth: "85%",
+                          border: "1px dashed rgba(25, 118, 210, 0.3)",
                         }}
+                      >
+                        <FormatQuote
+                          color="primary"
+                          sx={{
+                            fontSize: 40,
+                            opacity: 0.6,
+                            mb: 1,
+                          }}
+                        />
+                        <Typography
+                          variant="h6"
+                          color="text.primary"
+                          sx={{ mb: 2, fontWeight: 500 }}
+                        >
+                          {t("welcomeToTherapy")}
+                        </Typography>
+                        <Typography
+                          variant="body1"
+                          color="text.secondary"
+                          sx={{ mb: 1 }}
+                        >
+                          {t("therapyGreeting")}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {t("therapyInstructions")}
+                        </Typography>
+                      </Box>
+
+                      <Box sx={{ mt: 2 }}>
+                        <Button
+                          variant="outlined"
+                          color="primary"
+                          startIcon={<RestartAlt />}
+                          onClick={startNewSession}
+                          disabled={sessionLimitReached && !isSessionsUnlimited}
+                          sx={{
+                            borderRadius: 2,
+                            textTransform: "none",
+                            px: 2,
+                          }}
+                        >
+                          {t("startNewSession")}
+                        </Button>
+                      </Box>
+                    </Box>
+                  </Fade>
+                )}
+
+                {/* Display messages in chronological order */}
+                {currentMessages.map((message, index) => (
+                  <Grow
+                    in={true}
+                    key={message.id}
+                    timeout={300}
+                    style={{
+                      transformOrigin: message.isAiGenerated
+                        ? "0 0 0"
+                        : "100% 0 0",
+                    }}
+                  >
+                    <Box>
+                      <MessageBubble
+                        message={message}
+                        user={user}
+                        onMenuOpen={handleMenuOpen}
+                        isFirstInSequence={
+                          index === 0 ||
+                          currentMessages[index - 1].isAiGenerated !==
+                            message.isAiGenerated
+                        }
+                        isLastInSequence={
+                          index === currentMessages.length - 1 ||
+                          currentMessages[index + 1].isAiGenerated !==
+                            message.isAiGenerated
+                        }
                       />
-                      <Typography
-                        variant="h6"
-                        color="text.primary"
-                        sx={{ mb: 2, fontWeight: 500 }}
-                      >
-                        {t("welcomeToTherapy")}
-                      </Typography>
-                      <Typography
-                        variant="body1"
-                        color="text.secondary"
-                        sx={{ mb: 1 }}
-                      >
-                        {t("therapyGreeting")}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {t("therapyInstructions")}
-                      </Typography>
                     </Box>
+                  </Grow>
+                ))}
 
-                    <Box sx={{ mt: 2 }}>
-                      <Button
-                        variant="outlined"
-                        color="primary"
-                        startIcon={<RestartAlt />}
-                        onClick={startNewSession}
-                        sx={{
-                          borderRadius: 2,
-                          textTransform: "none",
-                          px: 2,
-                        }}
-                      >
-                        {t("startNewSession")}
-                      </Button>
-                    </Box>
-                  </Box>
-                </Fade>
+                {/* Typing indicator */}
+                {isTyping && <TypingIndicator />}
+
+                {/* Scroll helper */}
+                <div ref={messagesEndRef} />
+              </Box>
+            </Paper>
+
+            {/* Message Input */}
+            <Box sx={{ px: 2, pb: 2 }}>
+              <MessageInput
+                message={newMessage}
+                setMessage={setNewMessage}
+                handleSendMessage={handleSendMessage}
+                disabled={
+                  sending ||
+                  !activeSession ||
+                  (messageLimitReached && !isMessagesUnlimited)
+                }
+                activeSession={activeSession}
+              />
+
+              {/* Mesaj limiti bilgisi */}
+              {!isMessagesUnlimited && (
+                <Box sx={{ mt: 1, px: 2, textAlign: "right" }}>
+                  <Typography
+                    variant="caption"
+                    color={
+                      remainingMessages > 3
+                        ? "text.secondary"
+                        : remainingMessages > 0
+                        ? "warning.main"
+                        : "error.main"
+                    }
+                  >
+                    {remainingMessages > 0
+                      ? t("messagesRemaining", { count: remainingMessages })
+                      : t("messageLimitReached")}
+                  </Typography>
+                </Box>
               )}
-
-              {/* Display messages in chronological order */}
-              {currentMessages.map((message, index) => (
-                <Grow
-                  in={true}
-                  key={message.id}
-                  timeout={300}
-                  style={{
-                    transformOrigin: message.isAiGenerated
-                      ? "0 0 0"
-                      : "100% 0 0",
-                  }}
-                >
-                  <Box>
-                    <MessageBubble
-                      message={message}
-                      user={user}
-                      onMenuOpen={handleMenuOpen}
-                      isFirstInSequence={
-                        index === 0 ||
-                        currentMessages[index - 1].isAiGenerated !==
-                          message.isAiGenerated
-                      }
-                      isLastInSequence={
-                        index === currentMessages.length - 1 ||
-                        currentMessages[index + 1].isAiGenerated !==
-                          message.isAiGenerated
-                      }
-                    />
-                  </Box>
-                </Grow>
-              ))}
-
-              {/* Typing indicator */}
-              {isTyping && <TypingIndicator />}
-
-              {/* Scroll helper */}
-              <div ref={messagesEndRef} />
             </Box>
-          </Paper>
+          </>
+        )}
 
-          {/* Message Input */}
-          <Box sx={{ px: 2, pb: 2 }}>
-            <MessageInput
-              message={newMessage}
-              setMessage={setNewMessage}
-              handleSendMessage={handleSendMessage}
-              disabled={sending || !activeSession}
-              activeSession={activeSession}
-            />
-          </Box>
-        </>
-      )}
+        {/* Message Menu */}
+        <MessageMenu
+          anchorEl={menuAnchorEl}
+          open={Boolean(menuAnchorEl)}
+          handleClose={handleMenuClose}
+          handleCopy={copyMessage}
+          handleDelete={deleteMessage}
+        />
 
-      {/* Message Menu */}
-      <MessageMenu
-        anchorEl={menuAnchorEl}
-        open={Boolean(menuAnchorEl)}
-        handleClose={handleMenuClose}
-        handleCopy={copyMessage}
-        handleDelete={deleteMessage}
-      />
-
-      {/* Error snackbar */}
-      <Snackbar
-        open={errorOpen}
-        autoHideDuration={6000}
-        onClose={handleErrorClose}
-        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-      >
-        <Alert
+        {/* Error snackbar */}
+        <Snackbar
+          open={errorOpen}
+          autoHideDuration={6000}
           onClose={handleErrorClose}
-          severity="error"
-          sx={{
-            width: "100%",
-            boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
-            borderRadius: 2,
-          }}
+          anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
         >
-          {errorMessage || error || t("anErrorOccurred")}
-        </Alert>
-      </Snackbar>
-
-      {/* Sessions Drawer */}
-      <Drawer
-        anchor="right"
-        open={drawerOpen}
-        onClose={() => dispatch(setDrawerOpen(false))}
-        PaperProps={{
-          sx: {
-            width: { xs: "85%", sm: 360 },
-            borderTopLeftRadius: 16,
-            borderBottomLeftRadius: 16,
-            boxShadow: "-4px 0 24px rgba(0,0,0,0.08)",
-            top: "64px",
-            height: "calc(100% - 64px)",
-          },
-        }}
-      >
-        <Box sx={{ p: 2 }}>
-          <Box
+          <Alert
+            onClose={handleErrorClose}
+            severity="error"
             sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              mb: 2,
+              width: "100%",
+              boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+              borderRadius: 2,
             }}
           >
-            <Typography variant="h6" fontWeight={600}>
-              {t("sessions")}
-            </Typography>
-            <Box>
-              <Tooltip
-                title={t("newSession")}
-                placement="left"
-                arrow
-                TransitionComponent={Zoom}
-              >
-                <IconButton
-                  color="primary"
-                  onClick={startNewSession}
-                  sx={{
-                    mr: 1,
-                    bgcolor: "rgba(25, 118, 210, 0.08)",
-                    "&:hover": {
-                      bgcolor: "rgba(25, 118, 210, 0.14)",
-                    },
-                  }}
-                >
-                  <Add />
-                </IconButton>
-              </Tooltip>
-              <Tooltip
-                title={t("close")}
-                placement="left"
-                arrow
-                TransitionComponent={Zoom}
-              >
-                <IconButton
-                  onClick={() => dispatch(setDrawerOpen(false))}
-                  sx={{
-                    bgcolor: "rgba(0, 0, 0, 0.04)",
-                    "&:hover": {
-                      bgcolor: "rgba(0, 0, 0, 0.08)",
-                    },
-                  }}
-                >
-                  <Close />
-                </IconButton>
-              </Tooltip>
-            </Box>
-          </Box>
-          <Divider sx={{ mb: 2 }} />
+            {errorMessage || error || t("anErrorOccurred")}
+          </Alert>
+        </Snackbar>
 
-          {loading ? (
-            <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
-              <CircularProgress size={30} />
-            </Box>
-          ) : sessions && sessions.length > 0 ? (
-            <Box>
-              {groupedSessions.map((group) => (
-                <Box key={group.date} sx={{ mb: 3 }}>
-                  <Typography
-                    variant="subtitle2"
+        {/* Sessions Drawer */}
+        <Drawer
+          anchor="right"
+          open={drawerOpen}
+          onClose={() => dispatch(setDrawerOpen(false))}
+          PaperProps={{
+            sx: {
+              width: { xs: "85%", sm: 360 },
+              borderTopLeftRadius: 16,
+              borderBottomLeftRadius: 16,
+              boxShadow: "-4px 0 24px rgba(0,0,0,0.08)",
+              top: "64px",
+              height: "calc(100% - 64px)",
+            },
+          }}
+        >
+          <Box sx={{ p: 2 }}>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                mb: 2,
+              }}
+            >
+              <Typography variant="h6" fontWeight={600}>
+                {t("sessions")}
+              </Typography>
+              <Box>
+                <Tooltip
+                  title={t("newSession")}
+                  placement="left"
+                  arrow
+                  TransitionComponent={Zoom}
+                >
+                  <IconButton
+                    color="primary"
+                    onClick={startNewSession}
+                    disabled={sessionLimitReached && !isSessionsUnlimited}
                     sx={{
-                      mb: 1,
-                      px: 1,
-                      color: "text.secondary",
-                      fontWeight: 600,
+                      mr: 1,
+                      bgcolor: "rgba(25, 118, 210, 0.08)",
+                      "&:hover": {
+                        bgcolor: "rgba(25, 118, 210, 0.14)",
+                      },
                     }}
                   >
-                    {group.date}
-                  </Typography>
-                  <Paper
-                    elevation={0}
+                    <Add />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip
+                  title={t("close")}
+                  placement="left"
+                  arrow
+                  TransitionComponent={Zoom}
+                >
+                  <IconButton
+                    onClick={() => dispatch(setDrawerOpen(false))}
                     sx={{
-                      borderRadius: 2,
-                      overflow: "hidden",
-                      border: "1px solid rgba(0,0,0,0.05)",
+                      bgcolor: "rgba(0, 0, 0, 0.04)",
+                      "&:hover": {
+                        bgcolor: "rgba(0, 0, 0, 0.08)",
+                      },
                     }}
                   >
-                    <List disablePadding>
-                      {group.sessions.map((session, index) => {
-                        const isCompleted = session.status === "Completed";
+                    <Close />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+            </Box>
+            <Divider sx={{ mb: 2 }} />
 
-                        return (
-                          <React.Fragment key={session.id}>
-                            {index > 0 && <Divider />}
-                            <ListItem
-                              disablePadding
-                              sx={{
-                                flexDirection: "column",
-                                alignItems: "stretch",
-                              }}
-                            >
-                              <ListItemButton
-                                selected={activeSession?.id === session.id}
-                                onClick={() => {
-                                  dispatch(setActiveSession(session));
-                                  dispatch(GetChatMessages(session.id));
-                                  dispatch(setDrawerOpen(false));
-                                }}
+            {loading ? (
+              <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
+                <CircularProgress size={30} />
+              </Box>
+            ) : sessions && sessions.length > 0 ? (
+              <Box>
+                {/* Abonelik bilgisi gösterimi */}
+                {!isSessionsUnlimited && (
+                  <Box sx={{ mb: 3 }}>
+                    <Alert severity="info" sx={{ mb: 2 }}>
+                      <Typography variant="body2">
+                        {t("weeklySessionsRemaining", {
+                          remaining: remainingSessions,
+                          total: weeklySessionLimit,
+                        })}
+                      </Typography>
+                    </Alert>
+                  </Box>
+                )}
+
+                {/* Mesaj sayısı limiti bilgisi */}
+                {!isMessagesUnlimited && activeSession && (
+                  <Box sx={{ mb: 3 }}>
+                    <Alert
+                      severity={
+                        remainingMessages > 3
+                          ? "info"
+                          : remainingMessages > 0
+                          ? "warning"
+                          : "error"
+                      }
+                      sx={{ mb: 2 }}
+                    >
+                      <Typography variant="body2">
+                        {remainingMessages > 0
+                          ? t("messagesRemainingInSession", {
+                              count: remainingMessages,
+                              total: messageLimitPerChat,
+                            })
+                          : t("messageLimitReachedInSession", {
+                              limit: messageLimitPerChat,
+                            })}
+                      </Typography>
+                    </Alert>
+                  </Box>
+                )}
+
+                {groupedSessions.map((group) => (
+                  <Box key={group.date} sx={{ mb: 3 }}>
+                    <Typography
+                      variant="subtitle2"
+                      sx={{
+                        mb: 1,
+                        px: 1,
+                        color: "text.secondary",
+                        fontWeight: 600,
+                      }}
+                    >
+                      {group.date}
+                    </Typography>
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        borderRadius: 2,
+                        overflow: "hidden",
+                        border: "1px solid rgba(0,0,0,0.05)",
+                      }}
+                    >
+                      <List disablePadding>
+                        {group.sessions.map((session, index) => {
+                          const isCompleted = session.status === "Completed";
+
+                          return (
+                            <React.Fragment key={session.id}>
+                              {index > 0 && <Divider />}
+                              <ListItem
+                                disablePadding
                                 sx={{
-                                  py: 1.5,
-                                  borderLeft:
-                                    activeSession?.id === session.id
-                                      ? `4px solid ${
-                                          isCompleted
-                                            ? theme.palette.success.main
-                                            : theme.palette.primary.main
-                                        }`
-                                      : "4px solid transparent",
-                                  bgcolor: isCompleted
-                                    ? alpha(
-                                        theme.palette.success.main,
-                                        activeSession?.id === session.id
-                                          ? 0.12
-                                          : 0.05
-                                      )
-                                    : activeSession?.id === session.id
-                                    ? alpha(theme.palette.primary.main, 0.08)
-                                    : "transparent",
-                                  "&:hover": {
+                                  flexDirection: "column",
+                                  alignItems: "stretch",
+                                }}
+                              >
+                                <ListItemButton
+                                  selected={activeSession?.id === session.id}
+                                  onClick={() => {
+                                    dispatch(setActiveSession(session));
+                                    dispatch(GetChatMessages(session.id));
+                                    dispatch(setDrawerOpen(false));
+                                  }}
+                                  sx={{
+                                    py: 1.5,
+                                    borderLeft:
+                                      activeSession?.id === session.id
+                                        ? `4px solid ${
+                                            isCompleted
+                                              ? theme.palette.success.main
+                                              : theme.palette.primary.main
+                                          }`
+                                        : "4px solid transparent",
                                     bgcolor: isCompleted
                                       ? alpha(
                                           theme.palette.success.main,
                                           activeSession?.id === session.id
-                                            ? 0.15
-                                            : 0.08
+                                            ? 0.12
+                                            : 0.05
                                         )
                                       : activeSession?.id === session.id
-                                      ? alpha(theme.palette.primary.main, 0.12)
-                                      : alpha(theme.palette.grey[500], 0.04),
-                                  },
-                                }}
-                              >
-                                <ListItemText
-                                  primary={
-                                    <Typography
-                                      variant="body2"
-                                      fontWeight={isCompleted ? 400 : 500}
-                                      sx={{
-                                        color: isCompleted
-                                          ? "text.secondary"
-                                          : "inherit",
-                                      }}
-                                    >
-                                      {new Date(
-                                        session.startTime
-                                      ).toLocaleTimeString("tr-TR", {
-                                        hour: "2-digit",
-                                        minute: "2-digit",
-                                      })}
-                                      {(activeSession?.id === session.id ||
-                                        session.isActive) &&
-                                        !isCompleted && (
+                                      ? alpha(theme.palette.primary.main, 0.08)
+                                      : "transparent",
+                                    "&:hover": {
+                                      bgcolor: isCompleted
+                                        ? alpha(
+                                            theme.palette.success.main,
+                                            activeSession?.id === session.id
+                                              ? 0.15
+                                              : 0.08
+                                          )
+                                        : activeSession?.id === session.id
+                                        ? alpha(
+                                            theme.palette.primary.main,
+                                            0.12
+                                          )
+                                        : alpha(theme.palette.grey[500], 0.04),
+                                    },
+                                  }}
+                                >
+                                  <ListItemText
+                                    primary={
+                                      <Typography
+                                        variant="body2"
+                                        fontWeight={isCompleted ? 400 : 500}
+                                        sx={{
+                                          color: isCompleted
+                                            ? "text.secondary"
+                                            : "inherit",
+                                        }}
+                                      >
+                                        {new Date(
+                                          session.startTime
+                                        ).toLocaleTimeString("tr-TR", {
+                                          hour: "2-digit",
+                                          minute: "2-digit",
+                                        })}
+                                        {(activeSession?.id === session.id ||
+                                          session.isActive) &&
+                                          !isCompleted && (
+                                            <Chip
+                                              label={t("active")}
+                                              size="small"
+                                              color="primary"
+                                              sx={{
+                                                ml: 1,
+                                                height: 18,
+                                                "& .MuiChip-label": {
+                                                  px: 0.8,
+                                                  py: 0,
+                                                },
+                                              }}
+                                            />
+                                          )}
+                                        {isCompleted && (
                                           <Chip
-                                            label={t("active")}
+                                            label={t("completed")}
                                             size="small"
-                                            color="primary"
+                                            color="success"
                                             sx={{
                                               ml: 1,
                                               height: 18,
@@ -1056,284 +1403,283 @@ const TherapyChat = () => {
                                             }}
                                           />
                                         )}
-                                      {isCompleted && (
-                                        <Chip
-                                          label={t("completed")}
-                                          size="small"
-                                          color="success"
-                                          sx={{
-                                            ml: 1,
-                                            height: 18,
-                                            "& .MuiChip-label": {
-                                              px: 0.8,
-                                              py: 0,
-                                            },
-                                          }}
-                                        />
-                                      )}
-                                    </Typography>
-                                  }
-                                  secondary={
-                                    <>
-                                      <Typography
-                                        variant="body2"
-                                        noWrap
-                                        color={
-                                          isCompleted
-                                            ? "text.disabled"
-                                            : "text.secondary"
-                                        }
-                                        sx={{
-                                          maxWidth: "100%",
-                                          overflow: "hidden",
-                                          textOverflow: "ellipsis",
-                                          fontStyle: isCompleted
-                                            ? "italic"
-                                            : "normal",
-                                        }}
-                                      >
-                                        {session.lastMessage || t("noMessages")}
                                       </Typography>
-                                      <Typography
-                                        variant="caption"
-                                        color={
-                                          isCompleted
-                                            ? "text.disabled"
-                                            : "text.secondary"
-                                        }
-                                        sx={{
-                                          display: "flex",
-                                          alignItems: "center",
-                                          mt: 0.5,
-                                        }}
-                                      >
-                                        <Box
+                                    }
+                                    secondary={
+                                      <>
+                                        <Typography
+                                          variant="body2"
+                                          noWrap
+                                          color={
+                                            isCompleted
+                                              ? "text.disabled"
+                                              : "text.secondary"
+                                          }
+                                          sx={{
+                                            maxWidth: "100%",
+                                            overflow: "hidden",
+                                            textOverflow: "ellipsis",
+                                            fontStyle: isCompleted
+                                              ? "italic"
+                                              : "normal",
+                                          }}
+                                        >
+                                          {session.lastMessage ||
+                                            t("noMessages")}
+                                        </Typography>
+                                        <Typography
+                                          variant="caption"
+                                          color={
+                                            isCompleted
+                                              ? "text.disabled"
+                                              : "text.secondary"
+                                          }
                                           sx={{
                                             display: "flex",
                                             alignItems: "center",
-                                            mr: 1,
+                                            mt: 0.5,
                                           }}
                                         >
-                                          <FormatQuote
-                                            fontSize="small"
+                                          <Box
                                             sx={{
-                                              fontSize: 16,
-                                              mr: 0.5,
-                                              opacity: isCompleted ? 0.6 : 0.8,
+                                              display: "flex",
+                                              alignItems: "center",
+                                              mr: 1,
                                             }}
-                                          />
-                                          <Typography
-                                            variant="caption"
-                                            fontWeight={isCompleted ? 400 : 500}
                                           >
-                                            {session.messageCount || 0}
-                                          </Typography>
-                                        </Box>
-                                        {t("messages")}
-                                      </Typography>
-                                    </>
-                                  }
-                                />
-                              </ListItemButton>
+                                            <FormatQuote
+                                              fontSize="small"
+                                              sx={{
+                                                fontSize: 16,
+                                                mr: 0.5,
+                                                opacity: isCompleted
+                                                  ? 0.6
+                                                  : 0.8,
+                                              }}
+                                            />
+                                            <Typography
+                                              variant="caption"
+                                              fontWeight={
+                                                isCompleted ? 400 : 500
+                                              }
+                                            >
+                                              {session.messageCount || 0}
+                                            </Typography>
+                                          </Box>
+                                          {t("messages")}
+                                        </Typography>
+                                      </>
+                                    }
+                                  />
+                                </ListItemButton>
 
-                              {!isCompleted && (
-                                <Box
-                                  sx={{
-                                    display: "flex",
-                                    justifyContent: "flex-end",
-                                    px: 2,
-                                    pb: 1,
-                                    pt: 0.5,
-                                    bgcolor: alpha(
-                                      theme.palette.background.paper,
-                                      0.6
-                                    ),
-                                    borderTop: "1px solid rgba(0,0,0,0.03)",
-                                  }}
-                                >
-                                  <Button
-                                    size="small"
-                                    startIcon={<CheckCircle fontSize="small" />}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleCompleteSession(session.id);
-                                    }}
+                                {!isCompleted && (
+                                  <Box
                                     sx={{
-                                      mr: 1,
-                                      textTransform: "none",
-                                      color: theme.palette.success.main,
-                                      borderColor: alpha(
-                                        theme.palette.success.main,
-                                        0.5
+                                      display: "flex",
+                                      justifyContent: "flex-end",
+                                      px: 2,
+                                      pb: 1,
+                                      pt: 0.5,
+                                      bgcolor: alpha(
+                                        theme.palette.background.paper,
+                                        0.6
                                       ),
-                                      "&:hover": {
-                                        borderColor: theme.palette.success.main,
-                                        bgcolor: alpha(
+                                      borderTop: "1px solid rgba(0,0,0,0.03)",
+                                    }}
+                                  >
+                                    <Button
+                                      size="small"
+                                      startIcon={
+                                        <CheckCircle fontSize="small" />
+                                      }
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleCompleteSession(session.id);
+                                      }}
+                                      sx={{
+                                        mr: 1,
+                                        textTransform: "none",
+                                        color: theme.palette.success.main,
+                                        borderColor: alpha(
                                           theme.palette.success.main,
-                                          0.04
+                                          0.5
                                         ),
-                                      },
-                                    }}
-                                    variant="outlined"
-                                  >
-                                    {t("complete")}
-                                  </Button>
-                                  <Button
-                                    size="small"
-                                    startIcon={
-                                      <DeleteOutline fontSize="small" />
-                                    }
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleDeleteSession(session.id);
-                                    }}
-                                    sx={{
-                                      textTransform: "none",
-                                      color: theme.palette.error.main,
-                                      borderColor: alpha(
-                                        theme.palette.error.main,
-                                        0.5
-                                      ),
-                                      "&:hover": {
-                                        borderColor: theme.palette.error.main,
-                                        bgcolor: alpha(
+                                        "&:hover": {
+                                          borderColor:
+                                            theme.palette.success.main,
+                                          bgcolor: alpha(
+                                            theme.palette.success.main,
+                                            0.04
+                                          ),
+                                        },
+                                      }}
+                                      variant="outlined"
+                                    >
+                                      {t("complete")}
+                                    </Button>
+                                    <Button
+                                      size="small"
+                                      startIcon={
+                                        <DeleteOutline fontSize="small" />
+                                      }
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDeleteSession(session.id);
+                                      }}
+                                      sx={{
+                                        textTransform: "none",
+                                        color: theme.palette.error.main,
+                                        borderColor: alpha(
                                           theme.palette.error.main,
-                                          0.04
+                                          0.5
                                         ),
-                                      },
-                                    }}
-                                    variant="outlined"
-                                  >
-                                    {t("delete")}
-                                  </Button>
-                                </Box>
-                              )}
+                                        "&:hover": {
+                                          borderColor: theme.palette.error.main,
+                                          bgcolor: alpha(
+                                            theme.palette.error.main,
+                                            0.04
+                                          ),
+                                        },
+                                      }}
+                                      variant="outlined"
+                                    >
+                                      {t("delete")}
+                                    </Button>
+                                  </Box>
+                                )}
 
-                              {isCompleted && (
-                                <Box
-                                  sx={{
-                                    display: "flex",
-                                    justifyContent: "flex-end",
-                                    px: 2,
-                                    pb: 1,
-                                    pt: 0.5,
-                                    bgcolor: alpha(
-                                      theme.palette.success.light,
-                                      0.05
-                                    ),
-                                    borderTop:
-                                      "1px solid rgba(76, 175, 80, 0.1)",
-                                  }}
-                                >
-                                  <Button
-                                    size="small"
-                                    startIcon={
-                                      <DeleteOutline fontSize="small" />
-                                    }
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleDeleteSession(session.id);
-                                    }}
+                                {isCompleted && (
+                                  <Box
                                     sx={{
-                                      textTransform: "none",
-                                      color: theme.palette.error.main,
-                                      borderColor: alpha(
-                                        theme.palette.error.main,
-                                        0.5
+                                      display: "flex",
+                                      justifyContent: "flex-end",
+                                      px: 2,
+                                      pb: 1,
+                                      pt: 0.5,
+                                      bgcolor: alpha(
+                                        theme.palette.success.light,
+                                        0.05
                                       ),
-                                      "&:hover": {
-                                        borderColor: theme.palette.error.main,
-                                        bgcolor: alpha(
-                                          theme.palette.error.main,
-                                          0.04
-                                        ),
-                                      },
+                                      borderTop:
+                                        "1px solid rgba(76, 175, 80, 0.1)",
                                     }}
-                                    variant="outlined"
                                   >
-                                    {t("delete")}
-                                  </Button>
-                                </Box>
-                              )}
-                            </ListItem>
-                          </React.Fragment>
-                        );
-                      })}
-                    </List>
-                  </Paper>
-                </Box>
-              ))}
-            </Box>
-          ) : (
-            <Box
-              sx={{
-                p: 4,
-                textAlign: "center",
-                bgcolor: "rgba(0, 0, 0, 0.02)",
-                borderRadius: 2,
-              }}
-            >
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                {t("noSessionsYet")}
-              </Typography>
-              <Button
-                variant="contained"
-                color="primary"
-                startIcon={<Add />}
-                onClick={startNewSession}
-                sx={{ borderRadius: 2, textTransform: "none" }}
+                                    <Button
+                                      size="small"
+                                      startIcon={
+                                        <DeleteOutline fontSize="small" />
+                                      }
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDeleteSession(session.id);
+                                      }}
+                                      sx={{
+                                        textTransform: "none",
+                                        color: theme.palette.error.main,
+                                        borderColor: alpha(
+                                          theme.palette.error.main,
+                                          0.5
+                                        ),
+                                        "&:hover": {
+                                          borderColor: theme.palette.error.main,
+                                          bgcolor: alpha(
+                                            theme.palette.error.main,
+                                            0.04
+                                          ),
+                                        },
+                                      }}
+                                      variant="outlined"
+                                    >
+                                      {t("delete")}
+                                    </Button>
+                                  </Box>
+                                )}
+                              </ListItem>
+                            </React.Fragment>
+                          );
+                        })}
+                      </List>
+                    </Paper>
+                  </Box>
+                ))}
+              </Box>
+            ) : (
+              <Box
+                sx={{
+                  p: 4,
+                  textAlign: "center",
+                  bgcolor: "rgba(0, 0, 0, 0.02)",
+                  borderRadius: 2,
+                }}
               >
-                {t("startFirstSession")}
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mb: 2 }}
+                >
+                  {t("noSessionsYet")}
+                </Typography>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  startIcon={<Add />}
+                  onClick={startNewSession}
+                  disabled={sessionLimitReached && !isSessionsUnlimited}
+                  sx={{ borderRadius: 2, textTransform: "none" }}
+                >
+                  {t("startFirstSession")}
+                </Button>
+              </Box>
+            )}
+
+            {sessions && sessions.length > 0 && (
+              <Button
+                variant="outlined"
+                color="inherit"
+                fullWidth
+                sx={{
+                  mt: 2,
+                  borderRadius: 2,
+                  textTransform: "none",
+                  color: "text.secondary",
+                  borderColor: "rgba(0, 0, 0, 0.12)",
+                }}
+                startIcon={<ClearAll />}
+                onClick={handleClearAllSessions}
+              >
+                {t("clearAllAiSessions")}
               </Button>
-            </Box>
-          )}
+            )}
+          </Box>
+        </Drawer>
 
-          {sessions && sessions.length > 0 && (
-            <Button
-              variant="outlined"
-              color="inherit"
-              fullWidth
-              sx={{
-                mt: 2,
-                borderRadius: 2,
-                textTransform: "none",
-                color: "text.secondary",
-                borderColor: "rgba(0, 0, 0, 0.12)",
-              }}
-              startIcon={<ClearAll />}
-              onClick={handleClearAllSessions}
-            >
-              {t("clearAllAiSessions")}
-            </Button>
-          )}
-        </Box>
-      </Drawer>
+        {/* Confirmation Modal */}
+        <ConfirmationModal
+          open={confirmModalProps.open}
+          onClose={() =>
+            setConfirmModalProps({ ...confirmModalProps, open: false })
+          }
+          onConfirm={confirmModalProps.onConfirm}
+          itemId={confirmModalProps.itemId}
+          title={confirmModalProps.title}
+          message={confirmModalProps.message}
+          confirmButtonText={confirmModalProps.confirmButtonText}
+          cancelButtonText={confirmModalProps.cancelButtonText}
+          confirmColor={confirmModalProps.confirmColor}
+          type={confirmModalProps.type}
+          warningMessage={confirmModalProps.warningMessage}
+        />
 
-      {/* Confirmation Modal */}
-      <ConfirmationModal
-        open={confirmModalProps.open}
-        onClose={() =>
-          setConfirmModalProps({ ...confirmModalProps, open: false })
-        }
-        onConfirm={confirmModalProps.onConfirm}
-        itemId={confirmModalProps.itemId}
-        title={confirmModalProps.title}
-        message={confirmModalProps.message}
-        confirmButtonText={confirmModalProps.confirmButtonText}
-        cancelButtonText={confirmModalProps.cancelButtonText}
-        confirmColor={confirmModalProps.confirmColor}
-        type={confirmModalProps.type}
-        warningMessage={confirmModalProps.warningMessage}
-      />
-
-      {/* Notification Snackbar */}
-      <NotificationSnackbar
-        open={notification.open}
-        onClose={() => setNotification({ ...notification, open: false })}
-        message={notification.message}
-        severity={notification.severity}
-      />
-    </Box>
+        {/* Notification Snackbar */}
+        <NotificationSnackbar
+          open={notification.open}
+          onClose={() => setNotification({ ...notification, open: false })}
+          message={notification.message}
+          severity={notification.severity}
+        />
+      </Box>
+    </FeatureGuard>
   );
 };
 
